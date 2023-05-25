@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/ >
+		<title>Taiwan Public Transportation</title>
+
+		<!-- Google fonts -->
+		<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css'>
+		<link href='https://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
+		<link href="style.css" rel="stylesheet" type="text/css">
+
+		<!-- D3.js -->
+		<script src="https://d3js.org/d3.v6.min.js" charset="utf-8"></script>
+		
+		<style>
+			body {
+				font-family: 'Open Sans', sans-serif;
+				font-size: 11px;
+				font-weight: 300;
+				fill: #242424;
+				text-align: center;
+				text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
+				cursor: default;
+			}
+			
+			.legend {
+				font-family: 'Raleway', sans-serif;
+				fill: #333333;
+			}
+			
+			.tooltip {
+				fill: #333333;
+			}
+		</style>
+	
+	</head>
+	<body>
+		<div class="chart"></div>
+		<input type="range" min="${minYear}" max="${maxYear}" value="2022" class="slider" id="yearSlider" list="yearlabel">
+
+		<!-- <datalist id="yearlabel">
+			<option value="2012" label="2012"></option>
+			<option value="2022" label="2022"></option>
+		</datalist> -->
+
+		<script src="script.js"></script>
+	</body>
+</html>
