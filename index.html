@@ -11,6 +11,7 @@
 
 		<!-- D3.js -->
 		<script src="https://d3js.org/d3.v6.min.js" charset="utf-8"></script>
+		<script src="https://unpkg.com/d3-simple-slider"></script>
 		
 		<style>
 			body {
@@ -36,7 +37,8 @@
 	</head>
 	<body>
 		<div class="chart"></div>
-		<input type="range" min="${minYear}" max="${maxYear}" value="2022" class="slider" id="yearSlider" list="yearlabel">
+		<div id="yearSlider"></div>
+		<input id="yearValue" hidden></input>
 
 		<!-- <datalist id="yearlabel">
 			<option value="2012" label="2012"></option>
