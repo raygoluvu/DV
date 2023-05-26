@@ -89,3 +89,44 @@
   option {
     padding: 0;
   }
+
+  body {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    fill: #242424;
+    text-align: center;
+    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
+    cursor: default;
+  }
+  
+  .legend {
+    font-family: 'Raleway', sans-serif;
+    fill: #333333;
+  }
+  
+  .tooltip {
+    fill: #333333;
+  }
+
+  #yearSlider {
+    height: 100px;
+  }
+
+  .sidebar {
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+  }
+
+  .sidebar-footer .border{
+    height: 150px;
+  }

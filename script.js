@@ -42,11 +42,13 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			d3.select('#yearValue').attr("value", val);
 		});
 
-	d3.select('#yearSlider')
-		.append('svg')
-		.append('g')
-		.attr('transform', 'translate(30,30)')
-		.call(slider);
+	const yearSlider = d3.select('#yearSlider')
+						.append('svg')
+						.attr("height", 100)
+						.append('g')
+						.attr('width', 1000)
+						.attr('transform', 'translate(30,30)')
+						.call(slider);
 	
 	var data = loadData(maxYear)
 
@@ -308,7 +310,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 	}
 
 	// Year slider
-	d3.select("#yearSlider").on("click", function () {
+	yearSlider.on("click", function () {
 		selectedYear = parseInt(d3.select("#yearValue").property("value"));	
 		
 		rawdata = loadData(selectedYear)
