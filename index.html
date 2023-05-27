@@ -1,111 +1,69 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/ >
-		<title>Taiwan Public Transportation</title>
+<html lang="en">
 
-		<!-- Google fonts -->
-		<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css'>
-		<link href='https://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css">
-		<link href="style.css" rel="stylesheet" type="text/css">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Taiwan Public Transportation</title>
 
-		<!-- D3.js -->
-		<script src="https://d3js.org/d3.v6.min.js" charset="utf-8"></script>
-		<script src="https://unpkg.com/d3-simple-slider"></script>
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
-		
-		<style>
-			body {
-				font-family: 'Open Sans', sans-serif;
-				font-size: 11px;
-				font-weight: 300;
-				fill: #242424;
-				text-align: center;
-				text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
-				cursor: default;
-			}
-			
-			.legend {
-				font-family: 'Raleway', sans-serif;
-				fill: #333333;
-			}
-			
-			.tooltip {
-				fill: #333333;
-			}
+	<!-- Bootstrap -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
+		integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous" />
 
-			#yearSlider {
-				height: 100px;
-			}
+	<!-- CSS -->
+	<link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+	<link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+	<link rel="stylesheet" href="/resources/demos/style.css">
+	<link rel="stylesheet" href="style.css">
 
-			.sidebar {
-				border: 1px solid #ccc;
-				border-radius: 10px;
-				padding: 20px;
-				height: 100%;
-				display: flex;
-				flex-direction: column;
-				box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
-			}
+	<!-- JS -->
+	<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+	<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+	<script src="https://d3js.org/d3.v6.min.js" charset="utf-8"></script>
+	<script src="slider.js"></script>
+	<script src="script.js"></script>
+</head>
 
-			.sidebar-footer {
-				margin-top: auto;
-			}
-		</style>
-	
-	</head>
-	<body>
+<body>
+	<div class="container my-4">
+		<h3 class="text-center mb-5">Taiwan Public Transportation Visualization</h3>
 
-
-		<div class="container-fluid">
-			<div class="row mt-3">
-				<div class="col-md-3">
-					<div class="sidebar">
-					  <!-- 在這裡放置圖表控制相關的功能 -->
-					  <div>
-						<img src="icon.png" alt="Icon" width="30" height="30"> <!-- 小圖案 -->
-					  </div>
-					  <div class="dropdown mt-3 ">
-						<button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-						  下拉式選單
-						</button>
-						<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-						  <a class="dropdown-item" href="#">Option1</a>
-						  <a class="dropdown-item" href="#">Option2</a>
-						  <a class="dropdown-item" href="#">Option3</a>
-						</div>
-					  </div>
-					  <div class="checklist mt-3">
-						<div class="form-check">
-							<input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
-							<label class="form-check-label" for="flexRadioDefault1">
-							  City1
-							</label>
-						  </div>
-						  <div class="form-check">
-							<input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" checked>
-							<label class="form-check-label" for="flexRadioDefault2">
-							  City2
-							</label>
-						</div>
-					  </div>
-					  <div class="sidebar-footer">
-						<div class="border rounded p-2">
-						  <p>Some introduction</p>
-						</div>
-					  </div>
+		<div class="row">
+			<div class="col-3">
+				<div class="mb-4">
+					<div class="bg-light rounded-4 p-3">
+						<h5 class="m-0 fw-bold text-secondary">City</h5>
 					</div>
+					<div class="cityPanel p-2"></div>
 				</div>
-			  <div class="col-md-9">
-				<!-- 這裡放置雷達圖表 -->
-				<div class="chart"></div>
-				<div id="yearSlider"></div>
-				<input id="yearValue" hidden></input>				
-			  </div>
+				<div class="mb-4">
+					<div class="bg-light rounded-4 p-3">
+						<h5 class="m-0 fw-bold text-secondary">Legend</h5>
+					</div>
+					<div class="cityLegend p-2"></div>
+				</div>
 			</div>
-		  </div>
+			<div class="col-6">
+				<div class="chart text-center"></div>
+			</div>
+			<div class="col-3">
+				<div class="bg-light rounded-4 p-3">
+					<h5 class="m-0 fw-bold text-secondary">Year</h5>
+				</div>
+				<div class="p-3">
+					<div class="d-flex justify-content-between">
+						<span id="minValue"></span>
+						<span id="maxValue">2</span>
+					</div>
+					<div id="slider-range"></div>
+				</div>
+			</div>
+		</div>
+	</div>
 
-		<script src="script.js"></script>
-	</body>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+		integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
+		crossorigin="anonymous"></script>
+</body>
+
 </html>
