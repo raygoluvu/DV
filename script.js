@@ -432,15 +432,15 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		// 往下更新折線圖
 		d3.select("#canva").remove();
 
-		const margin = { top: 30, bottom: 30, left: 20, right: 20, gap: 10 };
-		const width = 300, height = 200;
+		const margin = { top: 30, bottom: 30, left: 30, right: 30, gap: 10 };
+		const width = 200, height = 100;
 		var selectedYear = parseInt(d3.select("#yearValue").property("value"));
 
 		var svg_LineChart = d3
 			.select("#lineChart")
 			.append("svg")
 			.attr("id", "canva")
-			.attr("width", width + margin.left + margin.right)
+			.attr("width", width + margin.left + margin.right + 40)
 			.attr("height", height + margin.top + margin.bottom)
 			.append("g")
 			.attr("transform", `translate(${margin.left}, ${margin.top})`)
@@ -479,7 +479,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		console.log(maxTargetValue)
 		var xScale = d3.scaleLinear()
 			.domain([1, 12])
-			.range([0, width]);
+			.range([0, width - 30]);
 
 		var yScale = d3.scaleLinear()
 			.domain([0, maxTargetValue])
