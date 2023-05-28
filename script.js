@@ -23,6 +23,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		}
 	}
 
+	var	axisFormat = d3.format('.2s'),			 				//Axis label formating
+		tipFormat = d3.format('.0f');							//Tooltip formating
+
 	var types = Object.keys(csvData[0]).slice(3);
 
 	var monthMap = [
@@ -105,70 +108,34 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		.attr('for', d => d)
 		.text(d => d)	
 		
+	var svg = d3.select(id).append("svg")
+		.attr("width", cfg.w + 50)
+		.attr("height", cfg.h)
+		.attr("class", "radar");
+			
+	var g = svg.append("g")
+		.attr("transform", "translate(" + (cfg.w / 2 + cfg.margin.left) + "," + (cfg.h / 2 + cfg.margin.top) + ")");
+
 	createVisualization(cities)
 
 	function createVisualization(cities) {
-		var	citiesData = new Map(),
-			startYear = parseInt(d3.select("#minYear").text()),
-			endYear = parseInt(d3.select("#maxYear").text()),
-			startMonth = monthMap.find(function (month) {
-				return month.name === d3.select("#minMonth").text();
-			}).value,
-			endMonth = monthMap.find(function (month) {
-				return month.name === d3.select("#maxMonth").text();
-			}).value;
 
-		data = [];
-		
-		csvData.forEach(function(row) {
-			if (parseInt(row['Year']) >= startYear && parseInt(row['Year']) <= endYear &&
-				parseInt(row['Month']) >= startMonth && parseInt(row['Month']) <= endMonth &&
-				cities.includes(row['City'])) {
-				var city = row['City'];
-				if (citiesData.has(city)) {
-					var rowData = citiesData.get(city);
-					for (var j = 0; j < types.length; j++) {
-						rowData[j].value += parseInt(row[types[j]]);
-					}
-					citiesData.set(city, rowData);
-				} else {
-					var rowData = [];
-					for (var j = 0; j < types.length; j++) {
-						rowData.push({ axis: types[j], value: parseInt(row[types[j]]) });
-					}
-					citiesData.set(city, rowData);
-				}
-			}
-		});
-
-		citiesData.forEach(function(rowData, city) {
-			data.push(rowData);
-		});
+		var data = citiesFilter(csvData, cities);
 
 		// If the supplied maxValue is smaller than the actual one, replace by the max in the data
-		var maxValue = Math.max(cfg.maxValue, d3.max(data, function (i) {
+		var maxValue = roundUp(Math.max(cfg.maxValue, d3.max(data, function (i) {
 			return d3.max(i.map(function (o) { return o.value; }))
-		}));
+		})));
 			
 		var allAxis = data[0].map(function(i, j){return i.axis}),	//Names of each axis
 			total = allAxis.length,									//The number of different axes
 			radius = Math.min(cfg.w/2, cfg.h/2), 					//Radius of the outermost circle
-			Format = d3.format('.0f'),			 					//Percentage formatting
 			angleSlice = Math.PI * 2 / total;						//The width in radians of each "slice"
 
 		var radiusScale = d3.scaleLinear()
 			.range([0, radius])
 			.domain([0, maxValue]);
 
-		d3.select(id).select("svg").remove();
-		
-		var svg = d3.select(id).append("svg")
-			.attr("width", cfg.w + 50)
-			.attr("height", cfg.h)
-			.attr("class", "radar");
-				
-		var g = svg.append("g")
-			.attr("transform", "translate(" + (cfg.w / 2 + cfg.margin.left) + "," + (cfg.h / 2 + cfg.margin.top) + ")");
 		
 		//Filter for the outside glow
 		var filter = g.append('defs').append('filter').attr('id','glow'),
@@ -200,7 +167,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("dy", "0.4em")
 			.style("font-size", "10px")
 			.attr("fill", "#737373")
-			.text(function(d,i) { return Format(maxValue * d/cfg.levels); });
+			.text(function(d,i) { return axisFormat(maxValue * d/cfg.levels); });
 
 		// Create the straight lines radiating outward from the center
 		var axis = axisGrid.selectAll(".axis")
@@ -238,7 +205,8 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		if(cfg.roundStrokes) {
 			radarLine.curve(d3.curveCardinalClosed);
 		}
-					
+
+
 		//Create a wrapper for the blobs	
 		var blobWrapper = g.selectAll(".radarWrapper")
 			.data(data)
@@ -306,7 +274,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 				tooltip
 					.attr('x', newX)
 					.attr('y', newY)
-					.text(Format(i.value))
+					.text(tipFormat(i.value))
 					.transition().duration(200)
 					.style('opacity', 1);
 			})
@@ -316,35 +284,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			});
 			
 		// Set up the small tooltip for when you hover over a circle
-		var tooltip = g.append("text")
-			.attr("class", "tooltip")
-			.style("opacity", 0);
-
-		function wrap(text, width) {
-			text.each(function() {
-				var text = d3.select(this),
-					words = text.text().split(/\s+/).reverse(),
-					word,
-					line = [],
-					lineNumber = 0,
-					lineHeight = 1.4,
-					y = text.attr("y"),
-					x = text.attr("x"),
-					dy = parseFloat(text.attr("dy")),
-					tspan = text.text(null).append("tspan").attr("x", x).attr("y", y).attr("dy", dy + "em");
-					
-				while (word = words.pop()) {
-				line.push(word);
-				tspan.text(line.join(" "));
-				if (tspan.node().getComputedTextLength() > width) {
-					line.pop();
-					tspan.text(line.join(" "));
-					line = [word];
-					tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
-				}
-				}
-			});
-		}
 
 		var cityLegend = d3.select('.cityLegend');
 
@@ -357,7 +296,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.data(cities)
 			.enter()
 			.append("div")
-			.attr("class", "mb-1");
+			.attr("class", "legend mb-1");
 		
 		legends
 			.append('span')
@@ -369,6 +308,182 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		legends
 			.append('label')
 			.text(d => d)
+
+	}
+
+	function updateVisualization(cities) {
+		var data = citiesFilter(csvData, cities);
+
+		// If the supplied maxValue is smaller than the actual one, replace by the max in the data
+		var maxValue = roundUp(Math.max(cfg.maxValue, d3.max(data, function (i) {
+			return d3.max(i.map(function (o) { return o.value; }))
+		})));
+			
+		var allAxis = data[0].map(function(i, j){return i.axis}),	//Names of each axis
+			total = allAxis.length,									//The number of different axes
+			radius = Math.min(cfg.w/2, cfg.h/2), 					//Radius of the outermost circle
+			angleSlice = Math.PI * 2 / total;						//The width in radians of each "slice"
+
+		var radiusScale = d3.scaleLinear()
+			.range([0, radius])
+			.domain([0, maxValue]);
+
+		g.selectAll(".axisLabel")
+			.text(function(d,i) { return axisFormat(maxValue * d/cfg.levels); });
+		
+		var radarLine = d3.lineRadial()
+			.curve(d3.curveBasisClosed)
+			.radius(function(d) { return radiusScale(d.value); })
+			.angle(function(d,i) {	return i*angleSlice; });
+			
+		if(cfg.roundStrokes) {
+			radarLine.curve(d3.curveCardinalClosed);
+		}
+	
+		var blobWrapper = g.selectAll(".radarWrapper")
+		.data(data);
+	  
+		//Update radarArea
+		blobWrapper.select(".radarArea")
+		.transition().duration(200)
+		.attr("d", function(d, i) { return radarLine(d); })
+		.style("fill", function(d, i) { return cfg.color(i); });
+		
+		//Update radarStroke
+		blobWrapper.select(".radarStroke")
+		.transition().duration(200)
+		.attr("d", function(d, i) { return radarLine(d); })
+		.style("stroke", function(d, i) { return cfg.color(i); });
+		
+		//Enter new blobwrapper
+		var newBlobWrapper = blobWrapper.enter()
+		.append("g")
+		.attr("class", "radarWrapper");
+		
+		//Enter new radarArea
+		newBlobWrapper.append("path")
+		.attr("class", "radarArea")
+		.attr("d", function(d, i) { return radarLine(d); })
+		.style("fill", function(d, i) { return cfg.color(i); })
+		.style("fill-opacity", cfg.opacityArea)
+		.on('mouseover', function(d, i) {
+			d3.selectAll(".radarArea")
+			.transition().duration(200)
+			.style("fill-opacity", 0.1);
+			d3.select(this)
+			.transition().duration(200)
+			.style("fill-opacity", 0.7);
+		})
+		.on('mouseout', function() {
+			d3.selectAll(".radarArea")
+			.transition().duration(200)
+			.style("fill-opacity", cfg.opacityArea);
+		})
+		.transition().duration(200);
+		
+		//Enter new radarStroke
+		newBlobWrapper.append("path")
+		.attr("class", "radarStroke")
+		.attr("d", function(d, i) { return radarLine(d); })
+		.style("stroke-width", cfg.strokeWidth + "px")
+		.style("stroke", function(d, i) { return cfg.color(i); })
+		.style("fill", "none")
+		.style("filter", "url(#glow)")
+		.transition().duration(200);
+		
+		//Update the circles
+		blobWrapper.selectAll(".radarCircle")
+		.data(function(d,i) { return d; })
+		.transition().duration(200)
+			.attr("cx", function(d,i){ return radiusScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
+			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); });
+
+		// Enter new circles
+		newBlobWrapper.selectAll(".radarCircle")
+			.data(function(d,i) { return d; })
+			.enter().append("circle")
+			.attr("class", "radarCircle")
+			.attr("r", cfg.dotRadius)
+			.attr("cx", function(d,i){ return radiusScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
+			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); })
+			.style("fill", function(d,i) { console.log("123"); return cfg.color(data.indexOf(d3.select(this.parentNode).datum())); })
+			.style("fill-opacity", 0.8);
+	  
+		//Selection and update data
+		var blobCircleWrapper = g.selectAll(".radarCircleWrapper")
+			.data(data); 
+		
+		//Update invisibleCircle
+		blobCircleWrapper.selectAll(".radarInvisibleCircle")
+			.data(function(d) { return d; }) 
+			.transition().duration(200)
+			.attr("cx", function(d,i){ return radiusScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
+			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); });
+		
+
+		//Enter new cicleWrapper
+		var newBlobCircleWrapper = blobCircleWrapper.enter().append("g")
+			.attr("class", "radarCircleWrapper");
+		
+		//Enter new invisibleCircle
+		newBlobCircleWrapper.selectAll(".radarInvisibleCircle")
+			.data(function(d) { return d; }) 
+			.enter().append("circle")
+			.attr("class", "radarInvisibleCircle")
+			.attr("r", cfg.dotRadius*1.5)
+			.attr("cx", function(d,i){ return radiusScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
+			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); })
+			.style("fill", "none")
+			.style("pointer-events", "all")
+			.on("mouseover", function(d,i) {
+			newX =  parseFloat(d3.select(this).attr('cx')) - 10;
+			newY =  parseFloat(d3.select(this).attr('cy')) - 10;
+		
+			tooltip
+				.attr('x', newX)
+				.attr('y', newY)
+				.text(tipFormat(i.value))
+				.transition().duration(200)
+				.style('opacity', 1);
+			})
+			.on("mouseout", function(){
+			tooltip.transition().duration(200)
+				.style("opacity", 0);
+			}); 
+
+		
+		var legendsContainer = d3.select('.l');
+		var legends = legendsContainer
+			.selectAll('.mb-1')
+			.data(cities);
+		
+		legends
+			.select('span')
+			.style("background-color", function(d, i) { return cfg.color(i); })
+			.style("color", function(d, i) { return cfg.color(i); });
+		
+		legends
+			.select('label')
+			.text(function(d) { return d; });
+		
+		var newLegends = legends.enter()
+			.append("div")
+			.attr("class", "mb-1");
+		
+		newLegends
+			.append('span')
+			.attr('class', 'badge me-2')
+			.style("background-color", function(d, i) { return cfg.color(i); })
+			.style("color", function(d, i) { return cfg.color(i); })
+			.text('_');
+		
+		newLegends
+			.append('label')
+			.text(function(d) { return d; });
+		
+		legends.exit().remove();
+		blobCircleWrapper.remove();
+		blobWrapper.exit().remove();
 	}
 	
 	cityPanel.selectAll('input[type="checkbox"]').on("click", function () {
@@ -381,13 +496,12 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.nodes()
 			.map(node => node.value);
 		
-		d3.select(id).select("svg").remove()
-		d3.select('.cityLegend').select(".l").remove()
 
-		createVisualization(checkedCities)
+		updateVisualization(checkedCities)
 	}
 	
-	function roundUpToNextPower(number) {
+	// Used to Rounding up maxvalue
+	function roundUp(number) {
 		// 找到數字的位數
 		var numDigits = Math.floor(Math.log10(number)) + 1;
 	
@@ -399,4 +513,76 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 	
 		return roundedValue;
 	}
+
+	// Filter the csvData with given Cities
+	function citiesFilter(csvData, cities){
+		var	citiesData = new Map(),
+		startYear = parseInt(d3.select("#minYear").text()),
+		endYear = parseInt(d3.select("#maxYear").text()),
+		startMonth = monthMap.find(function (month) {
+			return month.name === d3.select("#minMonth").text();
+		}).value,
+		endMonth = monthMap.find(function (month) {
+			return month.name === d3.select("#maxMonth").text();
+		}).value;
+
+		data = [];
+		
+		csvData.forEach(function(row) {
+			if (parseInt(row['Year']) >= startYear && parseInt(row['Year']) <= endYear &&
+				parseInt(row['Month']) >= startMonth && parseInt(row['Month']) <= endMonth &&
+				cities.includes(row['City'])) {
+				var city = row['City'];
+				if (citiesData.has(city)) {
+					var rowData = citiesData.get(city);
+					for (var j = 0; j < types.length; j++) {
+						rowData[j].value += parseInt(row[types[j]]);
+					}
+					citiesData.set(city, rowData);
+				} else {
+					var rowData = [];
+					for (var j = 0; j < types.length; j++) {
+						rowData.push({ axis: types[j], value: parseInt(row[types[j]]) });
+					}
+					citiesData.set(city, rowData);
+				}
+			}
+		});
+
+		citiesData.forEach(function(rowData, city) {
+			data.push(rowData);
+		});
+
+		return data;
+	}
+
+	function wrap(text, width) {
+		text.each(function() {
+			var text = d3.select(this),
+				words = text.text().split(/\s+/).reverse(),
+				word,
+				line = [],
+				lineNumber = 0,
+				lineHeight = 1.4,
+				y = text.attr("y"),
+				x = text.attr("x"),
+				dy = parseFloat(text.attr("dy")),
+				tspan = text.text(null).append("tspan").attr("x", x).attr("y", y).attr("dy", dy + "em");
+				
+			while (word = words.pop()) {
+			line.push(word);
+			tspan.text(line.join(" "));
+			if (tspan.node().getComputedTextLength() > width) {
+				line.pop();
+				tspan.text(line.join(" "));
+				line = [word];
+				tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+			}
+			}
+		});
+	}
+
+	var tooltip = g.append("text")
+	.attr("class", "tooltip")
+	.style("opacity", 0);
 })
