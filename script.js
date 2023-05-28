@@ -43,6 +43,8 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		}
 	});
 
+	console.log(d3.select("tspan"))
+
 	$("#minValue").text($("#slider-range").slider("values", 0));
 	$("#maxValue").text($("#slider-range").slider("values", 1));
 
