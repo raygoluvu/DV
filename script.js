@@ -1,5 +1,6 @@
 const id = ".chart"
 
+
 d3.csv("tw-transportation.csv").then(function (csvData) {
 	var cfg = {
 		w: 350,					//Width of the circle
@@ -43,11 +44,11 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		}
 	});
 
-	console.log(d3.select("tspan"))
 
 	$("#minValue").text($("#slider-range").slider("values", 0));
 	$("#maxValue").text($("#slider-range").slider("values", 1));
 
+	// [cities]也可用在LlinChart
 	var cities = [...new Set(csvData.map(function (row) {
 		return row['City'];
 	}))];
@@ -81,6 +82,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		var start = parseInt(d3.select("#minValue").text());
 		var end = parseInt(d3.select("#maxValue").text());
 
+		console.log(start, end)
 		data = [];
 
 		var citiesData = new Map();
@@ -104,6 +106,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			}
 		});
 
+		console.log(citiesData)
 		citiesData.forEach(function (rowData, city) {
 			data.push(rowData);
 		});
@@ -339,17 +342,31 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 	});
 
 	function update() {
+		// 確認目前的城市
 		var checkedCities = cityPanel
 			.selectAll('input[type="checkbox"]:checked')
 			.nodes()
 			.map(node => node.value);
-
+		console.log(checkedCities)
 		d3.select(id).select("svg").remove()
 		d3.select('.cityLegend').select(".l").remove()
 
 		createVisualization(checkedCities)
 	}
 
+	var tspanElement = d3.selectAll("tspan")
+	tspanElement.on("click", function () {
+		console.log(this.textContent)
+		// 點擊事件的處理邏輯
+		var currentColor = d3.select(this).attr("fill");
+		if (currentColor === "red") {
+			// 如果當前顏色是紅色，則改變為藍色
+			d3.select(this).attr("fill", "blue");
+		} else {
+			// 如果當前顏色不是紅色，則改變為紅色
+			d3.select(this).attr("fill", "red");
+		}
+	});
 	function roundUpToNextPower(number) {
 		// 找到數字的位數
 		var numDigits = Math.floor(Math.log10(number)) + 1;
