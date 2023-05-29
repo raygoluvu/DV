@@ -51,6 +51,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 	var minYear = d3.min(years), maxYear = d3.max(years);
 
+	// MONTH RANGE
 	$("#year-range").slider({
 		range: true,
 		min: minYear,
@@ -65,6 +66,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 	$("#minYear").text($("#year-range").slider("values", 0));
 	$("#maxYear").text($("#year-range").slider("values", 1));
+
 
 	// MONTH RANGE
 	$("#month-range").slider({
@@ -142,7 +144,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			}
 		});
 
-		console.log(citiesData)
 		citiesData.forEach(function (rowData, city) {
 			data.push(rowData);
 		});
@@ -322,6 +323,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("class", "tooltip")
 			.style("opacity", 0);
 
+
 		function wrap(text, width) {
 			text.each(function () {
 				var text = d3.select(this),
@@ -338,15 +340,31 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 				while (word = words.pop()) {
 					line.push(word);
 					tspan.text(line.join(" "));
+
+					// 添加滑鼠樣式
+					tspan.on("mouseover", function () {
+						d3.select(this).style("cursor", "pointer");
+					}).on("mouseout", function () {
+						d3.select(this).style("cursor", null);
+					});
+
 					if (tspan.node().getComputedTextLength() > width) {
 						line.pop();
 						tspan.text(line.join(" "));
 						line = [word];
 						tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+
+						// 添加滑鼠樣式
+						tspan.on("mouseover", function () {
+							d3.select(this).style("cursor", "pointer");
+						}).on("mouseout", function () {
+							d3.select(this).style("cursor", null);
+						});
 					}
 				}
 			});
 		}
+
 
 		var cityLegend = d3.select('.cityLegend');
 
@@ -383,26 +401,92 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.selectAll('input[type="checkbox"]:checked')
 			.nodes()
 			.map(node => node.value);
-		console.log(checkedCities)
 		d3.select(id).select("svg").remove()
 		d3.select('.cityLegend').select(".l").remove()
 
 		createVisualization(checkedCities)
 	}
 
+	// 處理中
 	var tspanElement = d3.selectAll("tspan")
 	tspanElement.on("click", function () {
-		console.log(this.textContent)
-		// 點擊事件的處理邏輯
-		var currentColor = d3.select(this).attr("fill");
-		if (currentColor === "red") {
-			// 如果當前顏色是紅色，則改變為藍色
-			d3.select(this).attr("fill", "blue");
-		} else {
-			// 如果當前顏色不是紅色，則改變為紅色
-			d3.select(this).attr("fill", "red");
-		}
+		// 獲取點擊的tspan標籤「交通方式」
+		var target = this.textContent
+		createLineChart(target);
 	});
+
+	// 點擊標籤的時候觸發
+	function createLineChart(target) {
+		var lineChart = d3.select("#lineChart");
+		var canva = d3.select("#canva")
+		// 需要的資料有: 月份(變動)、年份(變動)
+		// 判斷div是否已有圖表
+		if (canva.empty()) {
+			lineChart.append("svg")
+				.attr("id", "canva")
+				.attr("width", cfg.w / 2 + cfg.margin.left + cfg.margin.right)
+				.attr("height", cfg.h / 2 + cfg.margin.top + cfg.margin.bottom)
+				.append("g")
+				.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
+
+			// 目前所勾選的城市
+			var checkedCities = cityPanel
+				.selectAll('input[type="checkbox"]:checked')
+				.nodes()
+				.map(node => node.value);
+
+			// 將資料依年份與月份篩選
+			// 儲存目標年份
+			var years = [];
+			for (var i = minYear; i <= maxYear; i++) {
+				years.push(i);
+			}
+			//years = years.map(function (year) {
+			//	return year.toString();
+			//})
+
+			// 儲存目標月份
+			var months = [];
+			var min = monthMap.find(function (month) {
+				if (month.name === minMonth.textContent) {
+					return month;
+				}
+			})
+			var max = monthMap.find(function (month) {
+				if (month.name === maxMonth.textContent) {
+					return month;
+				}
+			})
+
+			for (var i = min.value; i <= max.value; i++) {
+				months.push(monthMap[i - 1].value);
+			}
+			// 篩出符合要求的資料
+			var filteredData = csvData.filter(function (d) {
+				return years.includes(Number(d.Year)) &&
+					months.includes(Number(d.Month)) &&
+					checkedCities.includes(d.City)
+			});
+
+			var groupedByCity = d3.group(filteredData, d => d.City)
+			console.log(groupedByCity)
+
+		} else {
+			lineChart.attr("display", "none")
+		}
+	}
+
+	function updateLineChart() {
+		var linechart = d3.select("#canva");
+		if (linechart.empty()) {
+			console.log("Line Chart is invisible")
+			return;
+		} else {
+			// 在此更新折線圖
+
+		}
+	}
+
 	function roundUpToNextPower(number) {
 		// 找到數字的位數
 		var numDigits = Math.floor(Math.log10(number)) + 1;
