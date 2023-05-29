@@ -26,33 +26,63 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 	var types = Object.keys(csvData[0]).slice(3);
 
+	var monthMap = [
+		{ name: 'Jan', value: 1 },
+		{ name: 'Feb', value: 2 },
+		{ name: 'Mar', value: 3 },
+		{ name: 'Apr', value: 4 },
+		{ name: 'May', value: 5 },
+		{ name: 'June', value: 6 },
+		{ name: 'July', value: 7 },
+		{ name: 'Aug', value: 8 },
+		{ name: 'Sept', value: 9 },
+		{ name: 'Oct', value: 10 },
+		{ name: 'Nov', value: 11 },
+		{ name: 'Dec', value: 12 }
+	];
+
 	var years = csvData.map(function (row) {
 		return parseInt(row['Year']);
 	});
 
+	var cities = [...new Set(csvData.map(function (row) {
+		return row['City'];
+	}))];
+
 	var minYear = d3.min(years), maxYear = d3.max(years);
 
-	$("#slider-range").slider({
+	$("#year-range").slider({
 		range: true,
 		min: minYear,
 		max: maxYear,
 		values: [minYear, maxYear],
 		slide: function (event, ui) {
-			$("#minValue").text(ui.values[0])
-			$("#maxValue").text(ui.values[1])
+			$("#minYear").text(ui.values[0])
+			$("#maxYear").text(ui.values[1])
 			update()
 		}
 	});
 
+	$("#minYear").text($("#year-range").slider("values", 0));
+	$("#maxYear").text($("#year-range").slider("values", 1));
 
-	$("#minValue").text($("#slider-range").slider("values", 0));
-	$("#maxValue").text($("#slider-range").slider("values", 1));
+	// MONTH RANGE
+	$("#month-range").slider({
+		range: true,
+		min: 1,
+		max: 12,
+		values: [1, 12],
+		slide: function (event, ui) {
+			$("#minMonth").text(monthMap[ui.values[0] - 1].name)
+			$("#maxMonth").text(monthMap[ui.values[1] - 1].name)
+			update()
+		}
+	});
 
-	// [cities]也可用在LlinChart
-	var cities = [...new Set(csvData.map(function (row) {
-		return row['City'];
-	}))];
+	$("#minMonth").text('Jan');
+	$("#maxMonth").text('Dec');
 
+	// CITY PANEL
 	var cityPanel = d3.select('.cityPanel');
 
 	var cityboxes = cityPanel
@@ -79,16 +109,22 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 	createVisualization(cities)
 
 	function createVisualization(cities) {
-		var start = parseInt(d3.select("#minValue").text());
-		var end = parseInt(d3.select("#maxValue").text());
+		var citiesData = new Map(),
+			startYear = parseInt(d3.select("#minYear").text()),
+			endYear = parseInt(d3.select("#maxYear").text()),
+			startMonth = monthMap.find(function (month) {
+				return month.name === d3.select("#minMonth").text();
+			}).value,
+			endMonth = monthMap.find(function (month) {
+				return month.name === d3.select("#maxMonth").text();
+			}).value;
 
-		console.log(start, end)
 		data = [];
 
-		var citiesData = new Map();
-
 		csvData.forEach(function (row) {
-			if (parseInt(row['Year']) >= start && parseInt(row['Year']) <= end && cities.includes(row['City'])) {
+			if (parseInt(row['Year']) >= startYear && parseInt(row['Year']) <= endYear &&
+				parseInt(row['Month']) >= startMonth && parseInt(row['Month']) <= endMonth &&
+				cities.includes(row['City'])) {
 				var city = row['City'];
 				if (citiesData.has(city)) {
 					var rowData = citiesData.get(city);
