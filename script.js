@@ -412,6 +412,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 	// 處理中
 	var tspanElement = d3.selectAll("tspan")
 	tspanElement.on("click", function () {
+		console.log("clicked")
 		var canva = d3.select(".canva")
 		// 獲取點擊的tspan標籤「交通方式」
 		var target = this.textContent
@@ -436,29 +437,28 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.map(node => node.value);
 
 		// 將資料依年份與月份篩選 //
+		var startYear = parseInt(d3.select("#minYear").text()),
+			endYear = parseInt(d3.select("#maxYear").text()),
+			startMonth = monthMap.find(function (month) {
+				return month.name === d3.select("#minMonth").text();
+			}).value,
+			endMonth = monthMap.find(function (month) {
+				return month.name === d3.select("#maxMonth").text();
+			}).value;
 
 		// 儲存目標年份
 		var years = [];
-		for (var i = minYear; i <= maxYear; i++) {
+		for (var i = startYear; i <= endYear; i++) {
 			years.push(i);
 		}
 
 		// 儲存目標月份
 		var months = [];
-		var min = monthMap.find(function (month) {
-			if (month.name === minMonth.textContent) {
-				return month;
-			}
-		})
-		var max = monthMap.find(function (month) {
-			if (month.name === maxMonth.textContent) {
-				return month;
-			}
-		})
-
-		for (var i = min.value; i <= max.value; i++) {
-			months.push(monthMap[i - 1].value);
+		for (var i = startMonth; i <= endMonth; i++) {
+			months.push(i);
 		}
+
+		console.log(years, months)
 		// 篩出符合年份、城市、月份的資料
 		var filteredData = csvData.filter(function (d) {
 			return years.includes(Number(d.Year)) &&
@@ -505,6 +505,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 	function createLineChart(target) {
 		var lineChart = d3.select("#lineChart");
 		var canva = d3.selectAll(".canva")
+		canva.remove()
 		// 需要的資料有: 月份(變動)、年份(變動)
 		// 判斷div是否已有圖表
 		if (canva.empty()) {
@@ -589,15 +590,14 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			return;
 		} else {
 			// 在此更新折線圖
-			var startYear = parseInt(d3.select("#minYear").text()),
-				endYear = parseInt(d3.select("#maxYear").text()),
-				startMonth = monthMap.find(function (month) {
-					return month.name === d3.select("#minMonth").text();
-				}).value,
-				endMonth = monthMap.find(function (month) {
-					return month.name === d3.select("#maxMonth").text();
-				}).value;
-			console.log(startYear, endYear, startMonth, endMonth)
+			// 獲取更新資料
+			var target;
+			var canva = d3.select(".canva")
+			if (canva.classed("Bus")) { target = "Bus" }
+			else if (canva.classed("MRT")) { target = "MRT" }
+			else if (canva.classed("HSR")) { target = "HSR" }
+			console.log(target)
+			createLineChart(target)
 		}
 	}
 
