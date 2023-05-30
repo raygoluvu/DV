@@ -107,18 +107,18 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		.attr('class', 'form-check-label')
 		.attr('for', d => d)
 		.text(d => d)	
-		
-	var svg = d3.select(id).append("svg")
-		.attr("width", cfg.w + 50)
-		.attr("height", cfg.h)
-		.attr("class", "radar");
-			
-	var g = svg.append("g")
-		.attr("transform", "translate(" + (cfg.w / 2 + cfg.margin.left) + "," + (cfg.h / 2 + cfg.margin.top) + ")");
 
 	createVisualization(cities)
 
 	function createVisualization(cities) {
+
+		var svg = d3.select(id).append("svg")
+		.attr("width", cfg.w + 50)
+		.attr("height", cfg.h)
+		.attr("class", "radar");
+			
+		var g = svg.append("g")
+			.attr("transform", "translate(" + (cfg.w / 2 + cfg.margin.left) + "," + (cfg.h / 2 + cfg.margin.top) + ")");
 
 		var data = citiesFilter(csvData, cities);
 
@@ -284,6 +284,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			});
 			
 		// Set up the small tooltip for when you hover over a circle
+		var tooltip = g.append("text")
+		.attr("class", "tooltip")
+		.style("opacity", 0);
 
 		var cityLegend = d3.select('.cityLegend');
 
@@ -312,7 +315,12 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 	}
 
 	function updateVisualization(cities) {
+
 		var data = citiesFilter(csvData, cities);
+
+		var g = d3.select(id).select("g")
+
+		var tooltip = g.select("text")
 
 		// If the supplied maxValue is smaller than the actual one, replace by the max in the data
 		var maxValue = roundUp(Math.max(cfg.maxValue, d3.max(data, function (i) {
@@ -582,7 +590,4 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		});
 	}
 
-	var tooltip = g.append("text")
-	.attr("class", "tooltip")
-	.style("opacity", 0);
 })
