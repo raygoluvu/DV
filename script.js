@@ -3,9 +3,9 @@ const id = ".chart"
 
 d3.csv("tw-transportation.csv").then(function (csvData) {
 	var cfg = {
-		w: 350,					//Width of the circle
+		w: 400,					//Width of the circle
 		h: 400,					//Height of the circle
-		margin: { top: 20, right: 20, bottom: 20, left: 20 }, //The margins of the SVG
+		margin: { top: 40, right: 40, bottom: 40, left: 40 }, //The margins of the SVG
 		gap: 15,
 		levels: 3,				//How many levels or inner circles should there be drawn
 		maxValue: 0, 			//What is the value that the biggest circle will represent
@@ -168,8 +168,8 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		d3.select(id).select("svg").remove();
 
 		var svg = d3.select(id).append("svg")
-			.attr("width", cfg.w + 50)
-			.attr("height", cfg.h)
+			.attr("width", cfg.w + cfg.margin.left + cfg.margin.right)
+			.attr("height", cfg.h + cfg.margin.top + cfg.margin.bottom)
 			.attr("class", "radar");
 
 		var g = svg.append("g")
@@ -395,6 +395,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 	cityPanel.selectAll('input[type="checkbox"]').on("click", function () {
 		update()
+		updateLineChart()
 	});
 
 	function update() {
@@ -511,20 +512,22 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		var canva = lineChart.append("svg")
 			.attr("display", "block")
 			.attr("class", `${target} canva`)
-			.attr("width", cfg.w * 0.7 + cfg.margin.left + cfg.margin.right + cfg.gap)
-			.attr("height", cfg.h / 2 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
+			.attr("width", cfg.w + cfg.margin.left + cfg.margin.right + cfg.gap)
+			.attr("height", cfg.h * 0.7 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
 			.append("g")
-			.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
+		//.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
 
 		// 篩選資料
 		var groupedByCity = dataFilter(csvData, target);
 
 		// 計算y軸最大值
 		var maxTargetValue = 0;
+		var minTargetValue = 0;
 		var maxMonth = 0;
 		var minMonth = 0;
 		groupedByCity.forEach((values) => {
 			maxTargetValue = d3.max(values, function (d) { return parseInt(d[target]) });
+			minTargetValue = d3.min(values, function (d) { return parseInt(d[target]) });
 			maxMonth = d3.max(values, function (d) { return parseInt(d.Month) });
 			minMonth = d3.min(values, function (d) { return parseInt(d.Month) });
 		})
@@ -534,11 +537,11 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		// 獲取X軸範圍
 		var xScale = d3.scaleLinear()
 			.domain([minMonth, maxMonth])
-			.range([0, cfg.w * 0.6]);
+			.range([0, cfg.w * 0.8]);
 
 		var yScale = d3.scaleLinear()
-			.domain([0, maxTargetValue])
-			.range([cfg.h / 2, 0]);
+			.domain([minTargetValue, maxTargetValue])
+			.range([cfg.h * 0.7, 0]);
 
 		var line = d3.line()
 			.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
@@ -546,14 +549,14 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.curve(d3.curveMonotoneX) // 使用曲線插值方法，可根據需求調整
 
 		var yAxis = canva.append("g")
-			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right}, 0)`)
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right}, ${cfg.gap})`)
 			.attr("class", "yAxis")
 			.call(d3.axisLeft(yScale).ticks(10))
 			.selectAll("text")
 			.style("text-anchor", "left");
 
 		var xAxis = canva.append("g")
-			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h / 2 + cfg.gap})`)
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.7 + cfg.gap})`)
 			.attr("class", "xAxis")
 			.call(d3.axisBottom(xScale))
 			.selectAll("text")
@@ -566,7 +569,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 				.datum(values)
 				.attr("class", `line`)
 				.attr("d", line)
-				.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${0})`)
+				.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.gap})`)
 				.attr("fill", "none")
 				.attr("stroke", colorScale(city))
 				.attr("stroke-width", 2)
