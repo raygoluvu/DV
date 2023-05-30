@@ -112,6 +112,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		.text(d => d)
 
 	createVisualization(cities)
+	tspanClick()
 
 	function createVisualization(cities) {
 		var citiesData = new Map(),
@@ -408,26 +409,32 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		d3.select('.cityLegend').select(".l").remove()
 
 		createVisualization(checkedCities)
+		tspanClick()
+
 	}
 
-	// 處理中
-	var tspanElement = d3.selectAll("tspan")
-	tspanElement.on("click", function () {
-		console.log("clicked")
-		var canva = d3.select(".canva")
-		// 獲取點擊的tspan標籤「交通方式」
-		var target = this.textContent
-		if (canva.empty() || !canva.classed(`${target}`)) {
-			d3.selectAll(".canva").remove()
-			createLineChart(target);
-		}
-		else if (canva.style("display") == "none") {
-			canva.attr("display", "block")
-		} else {
-			console.log(canva.attr("display"))
-			canva.attr("display", "none")
-		}
-	});
+	//處理中
+	function tspanClick() {
+		var tspanElement = d3.selectAll("tspan")
+		tspanElement.on("click", function () {
+			console.log("clicked")
+			var canva = d3.select(".canva")
+			// 獲取點擊的tspan標籤「交通方式」
+			var target = this.textContent
+			if (canva.empty() || !canva.classed(`${target}`)) {
+
+				createLineChart(target);
+			}
+			//else if (canva.style("display") == "none") {
+			//	canva.attr("display", "block")
+			//}
+			else {
+				//console.log(canva.attr("display"))
+				//canva.attr("display", "none")
+				d3.selectAll(".canva").remove()
+			}
+		});
+	}
 
 	function dataFilter(cscData, target) {
 
@@ -522,17 +529,23 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 		// 計算y軸最大值
 		var maxTargetValue = 0;
-		var minTargetValue = 0;
+		var minTargetValue = Infinity;
 		var maxMonth = 0;
-		var minMonth = 0;
+		var minMonth = Infinity;
 		groupedByCity.forEach((values) => {
-			maxTargetValue = d3.max(values, function (d) { return parseInt(d[target]) });
-			minTargetValue = d3.min(values, function (d) { return parseInt(d[target]) });
-			maxMonth = d3.max(values, function (d) { return parseInt(d.Month) });
-			minMonth = d3.min(values, function (d) { return parseInt(d.Month) });
+			console.log(values)
+			var tmp = 0;
+			tmp = d3.max(values, function (d) { return parseInt(d[target]) });
+			if (tmp > maxTargetValue) { maxTargetValue = tmp }
+			tmp = d3.min(values, function (d) { return parseInt(d[target]) });
+			if (tmp < minTargetValue) { minTargetValue = tmp }
+			tmp = d3.max(values, function (d) { return parseInt(d.Month) });
+			if (tmp > maxMonth) { maxMonth = tmp }
+			tmp = d3.min(values, function (d) { return parseInt(d.Month) });
+			if (tmp < minMonth) { minMonth = tmp }
 		})
 
-		//console.log(maxTargetValue, maxMonth, minMonth)
+		console.log(maxTargetValue, maxMonth, minMonth)
 
 		// 獲取X軸範圍
 		var xScale = d3.scaleLinear()
@@ -556,7 +569,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.style("text-anchor", "left");
 
 		var xAxis = canva.append("g")
-			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.7 + cfg.gap})`)
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.7 + cfg.gap * 2})`)
 			.attr("class", "xAxis")
 			.call(d3.axisBottom(xScale))
 			.selectAll("text")
@@ -565,7 +578,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
 		groupedByCity.forEach(function (values, city) {
-			var path = canva.append("path")
+			console.log(values)
+			let none = values[0][target] == 0 ? true : false
+			canva.append("path")
 				.datum(values)
 				.attr("class", `line`)
 				.attr("d", line)
@@ -577,7 +592,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 				.transition() // 啟動動畫
 				.duration(1000) // 設定動畫持續時間為1秒
 				.ease(d3.easeQuadOut)
-				.style("opacity", 1); // 設定結束後的透明度為1，讓線條顯示出來
+				.style("opacity", none ? 0 : 1); // 設定結束後的透明度為1，讓線條顯示出來
 		});
 	}
 
@@ -594,7 +609,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			if (canva.classed("Bus")) { target = "Bus" }
 			else if (canva.classed("MRT")) { target = "MRT" }
 			else if (canva.classed("HSR")) { target = "HSR" }
+
 			console.log(target)
+
 			createLineChart(target)
 		}
 	}
