@@ -4,7 +4,7 @@ const id = ".chart"
 d3.csv("tw-transportation.csv").then(function (csvData) {
 	var cfg = {
 		w: 400,					//Width of the circle
-		h: 400,					//Height of the circle
+		h: 500,					//Height of the circle
 		margin: { top: 40, right: 40, bottom: 40, left: 40 }, //The margins of the SVG
 		gap: 15,
 		levels: 3,				//How many levels or inner circles should there be drawn
@@ -24,6 +24,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			if ('undefined' !== typeof options[i]) { cfg[i] = options[i]; }
 		}
 	}
+
+	var	axisFormat = d3.format('.2s'),			 				//Axis label formating
+		tipFormat = d3.format('.0f');							//Tooltip formating
 
 	var types = Object.keys(csvData[0]).slice(3);
 
@@ -115,67 +118,32 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 	tspanClick()
 
 	function createVisualization(cities) {
-		var citiesData = new Map(),
-			startYear = parseInt(d3.select("#minYear").text()),
-			endYear = parseInt(d3.select("#maxYear").text()),
-			startMonth = monthMap.find(function (month) {
-				return month.name === d3.select("#minMonth").text();
-			}).value,
-			endMonth = monthMap.find(function (month) {
-				return month.name === d3.select("#maxMonth").text();
-			}).value;
-		data = [];
 
-		csvData.forEach(function (row) {
-			if (parseInt(row['Year']) >= startYear && parseInt(row['Year']) <= endYear &&
-				parseInt(row['Month']) >= startMonth && parseInt(row['Month']) <= endMonth &&
-				cities.includes(row['City'])) {
-				var city = row['City'];
-				if (citiesData.has(city)) {
-					var rowData = citiesData.get(city);
-					for (var j = 0; j < types.length; j++) {
-						rowData[j].value += parseInt(row[types[j]]);
-					}
-					citiesData.set(city, rowData);
-				} else {
-					var rowData = [];
-					for (var j = 0; j < types.length; j++) {
-						rowData.push({ axis: types[j], value: parseInt(row[types[j]]) });
-					}
-					citiesData.set(city, rowData);
-				}
-			}
-		});
+		var svg = d3.select(id).append("svg")
+		.attr("width", cfg.w + 50)
+		.attr("height", cfg.h)
+		.attr("class", "radar");
+			
+		var g = svg.append("g")
+			.attr("transform", "translate(" + (cfg.w / 2 + cfg.margin.left) + "," + (cfg.h / 2 + cfg.margin.top) + ")");
 
-		citiesData.forEach(function (rowData, city) {
-			data.push(rowData);
-		});
+		var data = citiesFilter(csvData, cities);
 
 		// If the supplied maxValue is smaller than the actual one, replace by the max in the data
-		var maxValue = Math.max(cfg.maxValue, d3.max(data, function (i) {
+		var maxValue = roundUp(Math.max(cfg.maxValue, d3.max(data, function (i) {
 			return d3.max(i.map(function (o) { return o.value; }))
-		}));
-
-		var allAxis = data[0].map(function (i, j) { return i.axis }),	//Names of each axis
+		})));
+			
+		var allAxis = data[0].map(function(i, j){return i.axis}),	//Names of each axis
 			total = allAxis.length,									//The number of different axes
-			radius = Math.min(cfg.w / 2, cfg.h / 2), 					//Radius of the outermost circle
-			Format = d3.format('.0f'),			 					//Percentage formatting
+			radius = Math.min(cfg.w/2, cfg.h/2), 					//Radius of the outermost circle
 			angleSlice = Math.PI * 2 / total;						//The width in radians of each "slice"
 
 		var radiusScale = d3.scaleLinear()
 			.range([0, radius])
 			.domain([0, maxValue]);
 
-		d3.select(id).select("svg").remove();
-
-		var svg = d3.select(id).append("svg")
-			.attr("width", cfg.w + cfg.margin.left + cfg.margin.right)
-			.attr("height", cfg.h + cfg.margin.top + cfg.margin.bottom)
-			.attr("class", "radar");
-
-		var g = svg.append("g")
-			.attr("transform", "translate(" + (cfg.w / 2 + cfg.margin.left) + "," + (cfg.h / 2 + cfg.margin.top) + ")");
-
+		
 		//Filter for the outside glow
 		var filter = g.append('defs').append('filter').attr('id', 'glow'),
 			feGaussianBlur = filter.append('feGaussianBlur').attr('stdDeviation', '2.5').attr('result', 'coloredBlur'),
@@ -206,7 +174,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("dy", "0.4em")
 			.style("font-size", "10px")
 			.attr("fill", "#737373")
-			.text(function (d, i) { return Format(maxValue * d / cfg.levels); });
+			.text(function(d,i) { return axisFormat(maxValue * d/cfg.levels); });
 
 		// Create the straight lines radiating outward from the center
 		var axis = axisGrid.selectAll(".axis")
@@ -244,6 +212,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		if (cfg.roundStrokes) {
 			radarLine.curve(d3.curveCardinalClosed);
 		}
+
 
 		//Create a wrapper for the blobs	
 		var blobWrapper = g.selectAll(".radarWrapper")
@@ -312,7 +281,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 				tooltip
 					.attr('x', newX)
 					.attr('y', newY)
-					.text(Format(i.value))
+					.text(tipFormat(i.value))
 					.transition().duration(200)
 					.style('opacity', 1);
 			})
@@ -325,48 +294,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		var tooltip = g.append("text")
 			.attr("class", "tooltip")
 			.style("opacity", 0);
-
-
-		function wrap(text, width) {
-			text.each(function () {
-				var text = d3.select(this),
-					words = text.text().split(/\s+/).reverse(),
-					word,
-					line = [],
-					lineNumber = 0,
-					lineHeight = 1.4,
-					y = text.attr("y"),
-					x = text.attr("x"),
-					dy = parseFloat(text.attr("dy")),
-					tspan = text.text(null).append("tspan").attr("x", x).attr("y", y).attr("dy", dy + "em");
-
-				while (word = words.pop()) {
-					line.push(word);
-					tspan.text(line.join(" "));
-
-					// 添加滑鼠樣式
-					tspan.on("mouseover", function () {
-						d3.select(this).style("cursor", "pointer");
-					}).on("mouseout", function () {
-						d3.select(this).style("cursor", null);
-					});
-
-					if (tspan.node().getComputedTextLength() > width) {
-						line.pop();
-						tspan.text(line.join(" "));
-						line = [word];
-						tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
-
-						// 添加滑鼠樣式
-						tspan.on("mouseover", function () {
-							d3.select(this).style("cursor", "pointer");
-						}).on("mouseout", function () {
-							d3.select(this).style("cursor", null);
-						});
-					}
-				}
-			});
-		}
 
 
 		var cityLegend = d3.select('.cityLegend');
@@ -392,6 +319,208 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		legends
 			.append('label')
 			.text(d => d)
+
+	}
+
+	function updateVisualization(cities) {
+
+		var data = citiesFilter(csvData, cities);
+
+		var g = d3.select(id).select("g")
+
+		var tooltip = g.select(".tooltip")
+		
+		if(data.length === 0){
+			g.select('.radarWrapper').remove();
+			g.selectAll('.radarCircleWrapper').remove();
+			d3.select('.l').selectAll('.mb-1').remove();
+			return;
+		}
+
+		// If the supplied maxValue is smaller than the actual one, replace by the max in the data
+		var maxValue = roundUp(Math.max(cfg.maxValue, d3.max(data, function (i) {
+			return d3.max(i.map(function (o) { return o.value; }))
+		})));
+			
+		var allAxis = data[0].map(function(i, j){return i.axis}),	//Names of each axis
+			total = allAxis.length,									//The number of different axes
+			radius = Math.min(cfg.w/2, cfg.h/2), 					//Radius of the outermost circle
+			angleSlice = Math.PI * 2 / total;						//The width in radians of each "slice"
+
+		var radiusScale = d3.scaleLinear()
+			.range([0, radius])
+			.domain([0, maxValue]);
+
+		g.selectAll(".axisLabel")
+			.text(function(d,i) { return axisFormat(maxValue * d/cfg.levels); });
+		
+		var radarLine = d3.lineRadial()
+			.curve(d3.curveBasisClosed)
+			.radius(function(d) { return radiusScale(d.value); })
+			.angle(function(d,i) {	return i*angleSlice; });
+			
+		if(cfg.roundStrokes) {
+			radarLine.curve(d3.curveCardinalClosed);
+		}
+	
+		var blobWrapper = g.selectAll(".radarWrapper")
+		.data(data);
+	  
+		//Update radarArea
+		blobWrapper.select(".radarArea")
+		.transition().duration(200)
+		.attr("d", function(d, i) { return radarLine(d); })
+		.style("fill", function(d, i) { return cfg.color(i); });
+		
+		//Update radarStroke
+		blobWrapper.select(".radarStroke")
+		.transition().duration(200)
+		.attr("d", function(d, i) { return radarLine(d); })
+		.style("stroke", function(d, i) { return cfg.color(i); });
+		
+		//Enter new blobwrapper
+		var newBlobWrapper = blobWrapper.enter()
+		.append("g")
+		.attr("class", "radarWrapper");
+		
+		//Enter new radarArea
+		newBlobWrapper.append("path")
+		.attr("class", "radarArea")
+		.attr("d", function(d, i) { return radarLine(d); })
+		.style("fill", function(d, i) { return cfg.color(i); })
+		.style("fill-opacity", cfg.opacityArea)
+		.on('mouseover', function(d, i) {
+			d3.selectAll(".radarArea")
+			.transition().duration(200)
+			.style("fill-opacity", 0.1);
+			d3.select(this)
+			.transition().duration(200)
+			.style("fill-opacity", 0.7);
+		})
+		.on('mouseout', function() {
+			d3.selectAll(".radarArea")
+			.transition().duration(200)
+			.style("fill-opacity", cfg.opacityArea);
+		})
+		.transition().duration(200);
+		
+		//Enter new radarStroke
+		newBlobWrapper.append("path")
+		.attr("class", "radarStroke")
+		.attr("d", function(d, i) { return radarLine(d); })
+		.style("stroke-width", cfg.strokeWidth + "px")
+		.style("stroke", function(d, i) { return cfg.color(i); })
+		.style("fill", "none")
+		.style("filter", "url(#glow)")
+		.transition().duration(200);
+		
+		//Update the circles
+		blobWrapper.selectAll(".radarCircle")
+		.data(function(d,i) { return d; })
+		.transition().duration(200)
+			.attr("cx", function(d,i){ return radiusScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
+			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); });
+
+		// Enter new circles
+		newBlobWrapper.selectAll(".radarCircle")
+			.data(function(d,i) { return d; })
+			.enter().append("circle")
+			.attr("class", "radarCircle")
+			.attr("r", cfg.dotRadius)
+			.attr("cx", function(d,i){ return radiusScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
+			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); })
+			.style("fill", function(d,i) { console.log("123"); return cfg.color(data.indexOf(d3.select(this.parentNode).datum())); })
+			.style("fill-opacity", 0.8);
+	  
+		//Selection and update data
+		var blobCircleWrapper = g.selectAll(".radarCircleWrapper")
+			.data(data); 
+		
+		//Update invisibleCircle
+		blobCircleWrapper.selectAll(".radarInvisibleCircle")
+			.data(function(d) { return d; }) 
+			.attr("cx", function(d,i){ return radiusScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
+			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); })
+			.on("mouseover", function(d,i) {
+				newX =  parseFloat(d3.select(this).attr('cx')) - 10;
+				newY =  parseFloat(d3.select(this).attr('cy')) - 10;
+			
+				tooltip
+					.attr('x', newX)
+					.attr('y', newY)
+					.text(tipFormat(i.value))
+					.transition().duration(200)
+					.style('opacity', 1);
+				})
+				.on("mouseout", function(){
+				tooltip.transition().duration(200)
+					.style("opacity", 0);
+				});
+		
+
+		//Enter new cicleWrapper
+		var newBlobCircleWrapper = blobCircleWrapper.enter().append("g")
+			.attr("class", "radarCircleWrapper");
+		
+		//Enter new invisibleCircle
+		newBlobCircleWrapper.selectAll(".radarInvisibleCircle")
+			.data(function(d) { return d; }) 
+			.enter().append("circle")
+			.attr("class", "radarInvisibleCircle")
+			.attr("r", cfg.dotRadius*1.5)
+			.attr("cx", function(d,i){ return radiusScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
+			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); })
+			.style("fill", "none")
+			.style("pointer-events", "all")
+			.on("mouseover", function(d,i) {
+			newX =  parseFloat(d3.select(this).attr('cx')) - 10;
+			newY =  parseFloat(d3.select(this).attr('cy')) - 10;
+		
+			tooltip
+				.attr('x', newX)
+				.attr('y', newY)
+				.text(tipFormat(i.value))
+				.transition().duration(200)
+				.style('opacity', 1);
+			})
+			.on("mouseout", function(){
+			tooltip.transition().duration(200)
+				.style("opacity", 0);
+			}); 
+
+		
+		var legendsContainer = d3.select('.l');
+		var legends = legendsContainer
+			.selectAll('.mb-1')
+			.data(cities);
+		
+		legends
+			.select('span')
+			.style("background-color", function(d, i) { return cfg.color(i); })
+			.style("color", function(d, i) { return cfg.color(i); });
+		
+		legends
+			.select('label')
+			.text(function(d) { return d; });
+		
+		var newLegends = legends.enter()
+			.append("div")
+			.attr("class", "mb-1");
+		
+		newLegends
+			.append('span')
+			.attr('class', 'badge me-2')
+			.style("background-color", function(d, i) { return cfg.color(i); })
+			.style("color", function(d, i) { return cfg.color(i); })
+			.text('_');
+		
+		newLegends
+			.append('label')
+			.text(function(d) { return d; });
+		
+		legends.exit().remove();
+		blobCircleWrapper.exit().remove();
+		blobWrapper.exit().remove();
 	}
 
 	cityPanel.selectAll('input[type="checkbox"]').on("click", function () {
@@ -405,10 +534,8 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.selectAll('input[type="checkbox"]:checked')
 			.nodes()
 			.map(node => node.value);
-		d3.select(id).select("svg").remove()
-		d3.select('.cityLegend').select(".l").remove()
 
-		createVisualization(checkedCities)
+		updateVisualization(checkedCities)
 		tspanClick()
 
 	}
@@ -520,7 +647,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("display", "block")
 			.attr("class", `${target} canva`)
 			.attr("width", cfg.w + cfg.margin.left + cfg.margin.right + cfg.gap)
-			.attr("height", cfg.h * 0.7 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
+			.attr("height", cfg.h * 0.65 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
 			.append("g")
 		//.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
 
@@ -554,7 +681,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 		var yScale = d3.scaleLinear()
 			.domain([minTargetValue, maxTargetValue])
-			.range([cfg.h * 0.7, 0]);
+			.range([cfg.h * 0.5, 0]);
 
 		var line = d3.line()
 			.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
@@ -569,7 +696,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.style("text-anchor", "left");
 
 		var xAxis = canva.append("g")
-			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.7 + cfg.gap * 2})`)
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.5 + cfg.gap * 2})`)
 			.attr("class", "xAxis")
 			.call(d3.axisBottom(xScale))
 			.selectAll("text")
@@ -616,7 +743,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		}
 	}
 
-	function roundUpToNextPower(number) {
+	
+	// Used to Rounding up maxvalue
+	function roundUp(number) {
 		// 找到數字的位數
 		var numDigits = Math.floor(Math.log10(number)) + 1;
 
@@ -628,4 +757,88 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 		return roundedValue;
 	}
+
+	// Filter the csvData with given Cities
+	function citiesFilter(csvData, cities){
+		var	citiesData = new Map(),
+		startYear = parseInt(d3.select("#minYear").text()),
+		endYear = parseInt(d3.select("#maxYear").text()),
+		startMonth = monthMap.find(function (month) {
+			return month.name === d3.select("#minMonth").text();
+		}).value,
+		endMonth = monthMap.find(function (month) {
+			return month.name === d3.select("#maxMonth").text();
+		}).value;
+
+		data = [];
+		
+		csvData.forEach(function(row) {
+			if (parseInt(row['Year']) >= startYear && parseInt(row['Year']) <= endYear &&
+				parseInt(row['Month']) >= startMonth && parseInt(row['Month']) <= endMonth &&
+				cities.includes(row['City'])) {
+				var city = row['City'];
+				if (citiesData.has(city)) {
+					var rowData = citiesData.get(city);
+					for (var j = 0; j < types.length; j++) {
+						rowData[j].value += parseInt(row[types[j]]);
+					}
+					citiesData.set(city, rowData);
+				} else {
+					var rowData = [];
+					for (var j = 0; j < types.length; j++) {
+						rowData.push({ axis: types[j], value: parseInt(row[types[j]]) });
+					}
+					citiesData.set(city, rowData);
+				}
+			}
+		});
+
+		citiesData.forEach(function(rowData, city) {
+			data.push(rowData);
+		});
+
+		return data;
+	}
+
+	function wrap(text, width) {
+		text.each(function () {
+			var text = d3.select(this),
+				words = text.text().split(/\s+/).reverse(),
+				word,
+				line = [],
+				lineNumber = 0,
+				lineHeight = 1.4,
+				y = text.attr("y"),
+				x = text.attr("x"),
+				dy = parseFloat(text.attr("dy")),
+				tspan = text.text(null).append("tspan").attr("x", x).attr("y", y).attr("dy", dy + "em");
+
+			while (word = words.pop()) {
+				line.push(word);
+				tspan.text(line.join(" "));
+
+				// 添加滑鼠樣式
+				tspan.on("mouseover", function () {
+					d3.select(this).style("cursor", "pointer");
+				}).on("mouseout", function () {
+					d3.select(this).style("cursor", null);
+				});
+
+				if (tspan.node().getComputedTextLength() > width) {
+					line.pop();
+					tspan.text(line.join(" "));
+					line = [word];
+					tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+
+					// 添加滑鼠樣式
+					tspan.on("mouseover", function () {
+						d3.select(this).style("cursor", "pointer");
+					}).on("mouseout", function () {
+						d3.select(this).style("cursor", null);
+					});
+				}
+			}
+		});
+	}
+
 })
