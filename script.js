@@ -3,9 +3,10 @@ const id = ".chart"
 
 d3.csv("tw-transportation.csv").then(function (csvData) {
 	var cfg = {
-		w: 350,					//Width of the circle
+		w: 400,					//Width of the circle
 		h: 400,					//Height of the circle
-		margin: { top: 20, right: 20, bottom: 20, left: 20 }, //The margins of the SVG
+		margin: { top: 40, right: 40, bottom: 40, left: 40 }, //The margins of the SVG
+		gap: 15,
 		levels: 3,				//How many levels or inner circles should there be drawn
 		maxValue: 0, 			//What is the value that the biggest circle will represent
 		labelFactor: 1.15, 		//How much farther than the radius of the outer circle should the labels be placed
@@ -51,7 +52,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 	var minYear = d3.min(years), maxYear = d3.max(years);
 
-	// MONTH RANGE
+	// YEAR RANGE
 	$("#year-range").slider({
 		range: true,
 		min: minYear,
@@ -61,6 +62,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			$("#minYear").text(ui.values[0])
 			$("#maxYear").text(ui.values[1])
 			update()
+			updateLineChart()
 		}
 	});
 
@@ -78,6 +80,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			$("#minMonth").text(monthMap[ui.values[0] - 1].name)
 			$("#maxMonth").text(monthMap[ui.values[1] - 1].name)
 			update()
+			updateLineChart()
 		}
 	});
 
@@ -109,6 +112,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		.text(d => d)
 
 	createVisualization(cities)
+	tspanClick()
 
 	function createVisualization(cities) {
 		var citiesData = new Map(),
@@ -120,7 +124,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			endMonth = monthMap.find(function (month) {
 				return month.name === d3.select("#maxMonth").text();
 			}).value;
-
 		data = [];
 
 		csvData.forEach(function (row) {
@@ -166,8 +169,8 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		d3.select(id).select("svg").remove();
 
 		var svg = d3.select(id).append("svg")
-			.attr("width", cfg.w + 50)
-			.attr("height", cfg.h)
+			.attr("width", cfg.w + cfg.margin.left + cfg.margin.right)
+			.attr("height", cfg.h + cfg.margin.top + cfg.margin.bottom)
 			.attr("class", "radar");
 
 		var g = svg.append("g")
@@ -393,6 +396,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 	cityPanel.selectAll('input[type="checkbox"]').on("click", function () {
 		update()
+		updateLineChart()
 	});
 
 	function update() {
@@ -405,85 +409,210 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		d3.select('.cityLegend').select(".l").remove()
 
 		createVisualization(checkedCities)
+		tspanClick()
+
 	}
 
-	// 處理中
-	var tspanElement = d3.selectAll("tspan")
-	tspanElement.on("click", function () {
-		// 獲取點擊的tspan標籤「交通方式」
-		var target = this.textContent
-		createLineChart(target);
-	});
+	//處理中
+	function tspanClick() {
+		var tspanElement = d3.selectAll("tspan")
+		tspanElement.on("click", function () {
+			console.log("clicked")
+			var canva = d3.select(".canva")
+			// 獲取點擊的tspan標籤「交通方式」
+			var target = this.textContent
+			if (canva.empty() || !canva.classed(`${target}`)) {
+
+				createLineChart(target);
+			}
+			//else if (canva.style("display") == "none") {
+			//	canva.attr("display", "block")
+			//}
+			else {
+				//console.log(canva.attr("display"))
+				//canva.attr("display", "none")
+				d3.selectAll(".canva").remove()
+			}
+		});
+	}
+
+	function dataFilter(cscData, target) {
+
+		// 目前所勾選的城市
+		var checkedCities = cityPanel
+			.selectAll('input[type="checkbox"]:checked')
+			.nodes()
+			.map(node => node.value);
+
+		// 將資料依年份與月份篩選 //
+		var startYear = parseInt(d3.select("#minYear").text()),
+			endYear = parseInt(d3.select("#maxYear").text()),
+			startMonth = monthMap.find(function (month) {
+				return month.name === d3.select("#minMonth").text();
+			}).value,
+			endMonth = monthMap.find(function (month) {
+				return month.name === d3.select("#maxMonth").text();
+			}).value;
+
+		// 儲存目標年份
+		var years = [];
+		for (var i = startYear; i <= endYear; i++) {
+			years.push(i);
+		}
+
+		// 儲存目標月份
+		var months = [];
+		for (var i = startMonth; i <= endMonth; i++) {
+			months.push(i);
+		}
+
+		console.log(years, months)
+		// 篩出符合年份、城市、月份的資料
+		var filteredData = csvData.filter(function (d) {
+			return years.includes(Number(d.Year)) &&
+				months.includes(Number(d.Month)) &&
+				checkedCities.includes(d.City)
+		});
+
+		// 依據月份、城市加總
+		const sumByCityMonthCount = [];
+		filteredData.forEach(entry => {
+			const city = entry.City;
+			const month = entry.Month;
+			const Bus = parseInt(entry.Bus);
+			const MRT = parseInt(entry.MRT);
+			const HSR = parseInt(entry.HSR)
+			//if (HSR ==0 || MRT==0 || Bus==0)
+			const key = `${city}-${month}`;
+
+			if (sumByCityMonthCount[key]) {
+				sumByCityMonthCount[key].Bus += Bus;
+				sumByCityMonthCount[key].MRT += MRT;
+				sumByCityMonthCount[key].HSR += HSR;
+			} else {
+				sumByCityMonthCount[key] = {
+					City: city,
+					Month: month,
+					Bus: Bus,
+					MRT: MRT,
+					HSR: HSR
+				};
+			}
+		});
+
+		// 將加總後的結果轉為陣列形式
+		const result = Object.values(sumByCityMonthCount);
+
+		var groupedByCity = d3.group(result, d => d.City)
+
+		return groupedByCity;
+	}
+
 
 	// 點擊標籤的時候觸發
 	function createLineChart(target) {
 		var lineChart = d3.select("#lineChart");
-		var canva = d3.select("#canva")
+		var canva = d3.selectAll(".canva")
+		canva.remove()
 		// 需要的資料有: 月份(變動)、年份(變動)
 		// 判斷div是否已有圖表
-		if (canva.empty()) {
-			lineChart.append("svg")
-				.attr("id", "canva")
-				.attr("width", cfg.w / 2 + cfg.margin.left + cfg.margin.right)
-				.attr("height", cfg.h / 2 + cfg.margin.top + cfg.margin.bottom)
-				.append("g")
-				.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
+		var canva = lineChart.append("svg")
+			.attr("display", "block")
+			.attr("class", `${target} canva`)
+			.attr("width", cfg.w + cfg.margin.left + cfg.margin.right + cfg.gap)
+			.attr("height", cfg.h * 0.7 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
+			.append("g")
+		//.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
 
-			// 目前所勾選的城市
-			var checkedCities = cityPanel
-				.selectAll('input[type="checkbox"]:checked')
-				.nodes()
-				.map(node => node.value);
+		// 篩選資料
+		var groupedByCity = dataFilter(csvData, target);
 
-			// 將資料依年份與月份篩選
-			// 儲存目標年份
-			var years = [];
-			for (var i = minYear; i <= maxYear; i++) {
-				years.push(i);
-			}
-			//years = years.map(function (year) {
-			//	return year.toString();
-			//})
+		// 計算y軸最大值
+		var maxTargetValue = 0;
+		var minTargetValue = Infinity;
+		var maxMonth = 0;
+		var minMonth = Infinity;
+		groupedByCity.forEach((values) => {
+			console.log(values)
+			var tmp = 0;
+			tmp = d3.max(values, function (d) { return parseInt(d[target]) });
+			if (tmp > maxTargetValue) { maxTargetValue = tmp }
+			tmp = d3.min(values, function (d) { return parseInt(d[target]) });
+			if (tmp < minTargetValue) { minTargetValue = tmp }
+			tmp = d3.max(values, function (d) { return parseInt(d.Month) });
+			if (tmp > maxMonth) { maxMonth = tmp }
+			tmp = d3.min(values, function (d) { return parseInt(d.Month) });
+			if (tmp < minMonth) { minMonth = tmp }
+		})
 
-			// 儲存目標月份
-			var months = [];
-			var min = monthMap.find(function (month) {
-				if (month.name === minMonth.textContent) {
-					return month;
-				}
-			})
-			var max = monthMap.find(function (month) {
-				if (month.name === maxMonth.textContent) {
-					return month;
-				}
-			})
+		console.log(maxTargetValue, maxMonth, minMonth)
 
-			for (var i = min.value; i <= max.value; i++) {
-				months.push(monthMap[i - 1].value);
-			}
-			// 篩出符合要求的資料
-			var filteredData = csvData.filter(function (d) {
-				return years.includes(Number(d.Year)) &&
-					months.includes(Number(d.Month)) &&
-					checkedCities.includes(d.City)
-			});
+		// 獲取X軸範圍
+		var xScale = d3.scaleLinear()
+			.domain([minMonth, maxMonth])
+			.range([0, cfg.w * 0.8]);
 
-			var groupedByCity = d3.group(filteredData, d => d.City)
-			console.log(groupedByCity)
+		var yScale = d3.scaleLinear()
+			.domain([minTargetValue, maxTargetValue])
+			.range([cfg.h * 0.7, 0]);
 
-		} else {
-			lineChart.attr("display", "none")
-		}
+		var line = d3.line()
+			.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
+			.y(function (d) { return yScale(parseInt(d[target])); }) // 假設你已經有一個 y 軸比例尺 yScale
+			.curve(d3.curveMonotoneX) // 使用曲線插值方法，可根據需求調整
+
+		var yAxis = canva.append("g")
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right}, ${cfg.gap})`)
+			.attr("class", "yAxis")
+			.call(d3.axisLeft(yScale).ticks(10))
+			.selectAll("text")
+			.style("text-anchor", "left");
+
+		var xAxis = canva.append("g")
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.7 + cfg.gap * 2})`)
+			.attr("class", "xAxis")
+			.call(d3.axisBottom(xScale))
+			.selectAll("text")
+			.style("text-anchor", "middle");
+
+		var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+		groupedByCity.forEach(function (values, city) {
+			console.log(values)
+			let none = values[0][target] == 0 ? true : false
+			canva.append("path")
+				.datum(values)
+				.attr("class", `line`)
+				.attr("d", line)
+				.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.gap})`)
+				.attr("fill", "none")
+				.attr("stroke", colorScale(city))
+				.attr("stroke-width", 2)
+				.style("opacity", 0) // 初始設定透明度為0，讓線條透明
+				.transition() // 啟動動畫
+				.duration(1000) // 設定動畫持續時間為1秒
+				.ease(d3.easeQuadOut)
+				.style("opacity", none ? 0 : 1); // 設定結束後的透明度為1，讓線條顯示出來
+		});
 	}
 
 	function updateLineChart() {
-		var linechart = d3.select("#canva");
+		var linechart = d3.select(".canva");
 		if (linechart.empty()) {
 			console.log("Line Chart is invisible")
 			return;
 		} else {
 			// 在此更新折線圖
+			// 獲取更新資料
+			var target;
+			var canva = d3.select(".canva")
+			if (canva.classed("Bus")) { target = "Bus" }
+			else if (canva.classed("MRT")) { target = "MRT" }
+			else if (canva.classed("HSR")) { target = "HSR" }
 
+			console.log(target)
+
+			createLineChart(target)
 		}
 	}
 
