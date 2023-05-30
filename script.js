@@ -508,79 +508,74 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		canva.remove()
 		// 需要的資料有: 月份(變動)、年份(變動)
 		// 判斷div是否已有圖表
-		if (canva.empty()) {
-			var canva = lineChart.append("svg")
-				.attr("display", "block")
-				.attr("class", `${target} canva`)
-				.attr("width", cfg.w * 0.7 + cfg.margin.left + cfg.margin.right + cfg.gap)
-				.attr("height", cfg.h / 2 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
-				.append("g")
-				.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
+		var canva = lineChart.append("svg")
+			.attr("display", "block")
+			.attr("class", `${target} canva`)
+			.attr("width", cfg.w * 0.7 + cfg.margin.left + cfg.margin.right + cfg.gap)
+			.attr("height", cfg.h / 2 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
+			.append("g")
+			.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
 
-			// 篩選資料
-			var groupedByCity = dataFilter(csvData, target);
+		// 篩選資料
+		var groupedByCity = dataFilter(csvData, target);
 
-			// 計算y軸最大值
-			var maxTargetValue = 0;
-			var maxMonth = 0;
-			var minMonth = 0;
-			groupedByCity.forEach((values) => {
-				maxTargetValue = d3.max(values, function (d) { return parseInt(d[target]) });
-				maxMonth = d3.max(values, function (d) { return parseInt(d.Month) });
-				minMonth = d3.min(values, function (d) { return parseInt(d.Month) });
-			})
+		// 計算y軸最大值
+		var maxTargetValue = 0;
+		var maxMonth = 0;
+		var minMonth = 0;
+		groupedByCity.forEach((values) => {
+			maxTargetValue = d3.max(values, function (d) { return parseInt(d[target]) });
+			maxMonth = d3.max(values, function (d) { return parseInt(d.Month) });
+			minMonth = d3.min(values, function (d) { return parseInt(d.Month) });
+		})
 
-			//console.log(maxTargetValue, maxMonth, minMonth)
+		//console.log(maxTargetValue, maxMonth, minMonth)
 
-			// 獲取X軸範圍
-			var xScale = d3.scaleLinear()
-				.domain([minMonth, maxMonth])
-				.range([0, cfg.w * 0.6]);
+		// 獲取X軸範圍
+		var xScale = d3.scaleLinear()
+			.domain([minMonth, maxMonth])
+			.range([0, cfg.w * 0.6]);
 
-			var yScale = d3.scaleLinear()
-				.domain([0, maxTargetValue])
-				.range([cfg.h / 2, 0]);
+		var yScale = d3.scaleLinear()
+			.domain([0, maxTargetValue])
+			.range([cfg.h / 2, 0]);
 
-			var line = d3.line()
-				.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
-				.y(function (d) { return yScale(parseInt(d[target])); }) // 假設你已經有一個 y 軸比例尺 yScale
-				.curve(d3.curveMonotoneX) // 使用曲線插值方法，可根據需求調整
+		var line = d3.line()
+			.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
+			.y(function (d) { return yScale(parseInt(d[target])); }) // 假設你已經有一個 y 軸比例尺 yScale
+			.curve(d3.curveMonotoneX) // 使用曲線插值方法，可根據需求調整
 
-			var yAxis = canva.append("g")
-				.attr("transform", `translate(${cfg.margin.left + cfg.margin.right}, 0)`)
-				.attr("class", "yAxis")
-				.call(d3.axisLeft(yScale).ticks(10))
-				.selectAll("text")
-				.style("text-anchor", "left");
+		var yAxis = canva.append("g")
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right}, 0)`)
+			.attr("class", "yAxis")
+			.call(d3.axisLeft(yScale).ticks(10))
+			.selectAll("text")
+			.style("text-anchor", "left");
 
-			var xAxis = canva.append("g")
-				.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h / 2 + cfg.gap})`)
-				.attr("class", "xAxis")
-				.call(d3.axisBottom(xScale))
-				.selectAll("text")
-				.style("text-anchor", "middle");
+		var xAxis = canva.append("g")
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h / 2 + cfg.gap})`)
+			.attr("class", "xAxis")
+			.call(d3.axisBottom(xScale))
+			.selectAll("text")
+			.style("text-anchor", "middle");
 
-			var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+		var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
-			groupedByCity.forEach(function (values, city) {
-				var path = canva.append("path")
-					.datum(values)
-					.attr("class", `line`)
-					.attr("d", line)
-					.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${0})`)
-					.attr("fill", "none")
-					.attr("stroke", colorScale(city))
-					.attr("stroke-width", 2)
-					.style("opacity", 0) // 初始設定透明度為0，讓線條透明
-					.transition() // 啟動動畫
-					.duration(1000) // 設定動畫持續時間為1秒
-					.ease(d3.easeQuadOut)
-					.style("opacity", 1); // 設定結束後的透明度為1，讓線條顯示出來
-
-			});
-		} else {
-			lineChart.attr("display", "none")
-		}
+		groupedByCity.forEach(function (values, city) {
+			var path = canva.append("path")
+				.datum(values)
+				.attr("class", `line`)
+				.attr("d", line)
+				.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${0})`)
+				.attr("fill", "none")
+				.attr("stroke", colorScale(city))
+				.attr("stroke-width", 2)
+				.style("opacity", 0) // 初始設定透明度為0，讓線條透明
+				.transition() // 啟動動畫
+				.duration(1000) // 設定動畫持續時間為1秒
+				.ease(d3.easeQuadOut)
+				.style("opacity", 1); // 設定結束後的透明度為1，讓線條顯示出來
+		});
 	}
 
 	function updateLineChart() {
