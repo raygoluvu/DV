@@ -431,7 +431,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("r", cfg.dotRadius)
 			.attr("cx", function(d,i){ return radiusScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
 			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); })
-			.style("fill", function(d,i) { console.log("123"); return cfg.color(data.indexOf(d3.select(this.parentNode).datum())); })
+			.style("fill", function(d,i) { return cfg.color(data.indexOf(d3.select(this.parentNode).datum())); })
 			.style("fill-opacity", 0.8);
 	  
 		//Selection and update data
@@ -551,7 +551,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			// 獲取點擊的tspan標籤「交通方式」
 			var target = this.textContent
 			if (canva.empty() || !canva.classed(`${target}`)) {
-
 				createLineChart(target);
 			}
 			//else if (canva.style("display") == "none") {
@@ -644,7 +643,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("display", "block")
 			.attr("class", `${target} canva`)
 			.attr("width", cfg.w*1.4 + cfg.margin.left + cfg.margin.right + cfg.gap)
-			.attr("height", cfg.h * 0.43 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
+			.attr("height", cfg.h * 0.44 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
 			.append("g")
 		//.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
 
@@ -657,7 +656,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		var maxMonth = 0;
 		var minMonth = Infinity;
 		groupedByCity.forEach((values) => {
-			console.log(values)
 			var tmp = 0;
 			tmp = d3.max(values, function (d) { return parseInt(d[target]) });
 			if (tmp > maxTargetValue) { maxTargetValue = tmp }
@@ -669,7 +667,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			if (tmp < minMonth) { minMonth = tmp }
 		})
 
-		console.log(maxTargetValue, maxMonth, minMonth)
 
 		// 獲取X軸範圍
 		var xScale = d3.scaleLinear()
@@ -693,7 +690,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.style("text-anchor", "left");
 
 		var xAxis = canva.append("g")
-			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.5 + cfg.gap * 2})`)
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.51 + cfg.gap * 2})`)
 			.attr("class", "xAxis")
 			.call(d3.axisBottom(xScale))
 			.selectAll("text")
@@ -702,11 +699,11 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
 		groupedByCity.forEach(function (values, city) {
-			console.log(values)
 			let none = values[0][target] == 0 ? true : false
+			console.log(city);
 			canva.append("path")
 				.datum(values)
-				.attr("class", `line`)
+				.attr("class", 'line')
 				.attr("d", line)
 				.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.gap})`)
 				.attr("fill", "none")
@@ -734,9 +731,71 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			else if (canva.classed("MRT")) { target = "MRT" }
 			else if (canva.classed("HSR")) { target = "HSR" }
 
-			console.log(target)
+			console.log(target);
 
-			createLineChart(target)
+			var groupedByCity = dataFilter(csvData, target);
+			
+
+			// 計算y軸最大值
+			var maxTargetValue = 0;
+			var minTargetValue = Infinity;
+			var maxMonth = 0;
+			var minMonth = Infinity;
+
+			groupedByCity.forEach((values) => {
+				var tmp = 0;
+				tmp = d3.max(values, function (d) { return parseInt(d[target]) });
+				if (tmp > maxTargetValue) { maxTargetValue = tmp }
+				tmp = d3.min(values, function (d) { return parseInt(d[target]) });
+				if (tmp < minTargetValue) { minTargetValue = tmp }
+				tmp = d3.max(values, function (d) { return parseInt(d.Month) });
+				if (tmp > maxMonth) { maxMonth = tmp }
+				tmp = d3.min(values, function (d) { return parseInt(d.Month) });
+				if (tmp < minMonth) { minMonth = tmp }
+			})
+
+			var xScale = d3.scaleLinear()
+			.domain([minMonth, maxMonth])
+			.range([0, cfg.w * 1.25]);
+
+			var yScale = d3.scaleLinear()
+				.domain([minTargetValue, maxTargetValue])
+				.range([cfg.h * 0.53, 0]);
+
+			var line = d3.line()
+				.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
+				.y(function (d) { return yScale(parseInt(d[target])); }) // 假設你已經有一個 y 軸比例尺 yScale
+				.curve(d3.curveMonotoneX) // 使用曲線插值方法，可根據需求調整
+
+			canva.select('.xAxis')
+				.transition()
+				.duration(500)
+				.call(d3.axisBottom(xScale));
+			
+			canva.select('.yAxis')
+				.transition()
+				.duration(500)
+				.call(d3.axisLeft(yScale)
+				.ticks(10));
+
+
+			var paths = canva.selectAll(".line").data(groupedByCity.values());
+
+
+			paths
+				.enter()
+				.append("path")
+				.attr("class", "line")
+				.merge(paths)
+				.transition()
+				.duration(800)
+				.attr("d", line)
+				.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.gap})`)
+				.attr("fill", "none")
+				.attr("stroke-width", 2)
+				.attr("stroke", function (d, i) {  return cfg.color(i); });
+
+			paths.exit().remove();
 		}
 	}
 
