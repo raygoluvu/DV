@@ -5,9 +5,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 	var cfg = {
 		w: 450,					//Width of the circle
 		h: 550,					//Height of the circle
-		margin: { top: 30, right: 60, bottom: 40, left: 30 }, //The margins of the SVG
+		margin: { top: 30, right: 80, bottom: 30, left: 20 }, //The margins of the SVG
 		gap: 15,
-		levels: 3,				//How many levels or inner circles should there be drawn
+		levels: 4,				//How many levels or inner circles should there be drawn
 		maxValue: 0, 			//What is the value that the biggest circle will represent
 		labelFactor: 1.15, 		//How much farther than the radius of the outer circle should the labels be placed
 		wrapWidth: 25, 			//The number of pixels after which a label needs to be given a new line
@@ -129,6 +129,8 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 		var data = citiesFilter(csvData, cities);
 
+		console.log(data);
+
 		// If the supplied maxValue is smaller than the actual one, replace by the max in the data
 		var maxValue = roundUp(Math.max(cfg.maxValue, d3.max(data, function (i) {
 			return d3.max(i.map(function (o) { return o.value; }))
@@ -198,11 +200,11 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("class", "legend")
 			.attr("data-bs-toggle", "offcanvas")
 			.attr("data-bs-target", "#offcanvasBottom")
-			.style("font-size", "11px")
+			.style("font-size", "25px")
 			.attr("text-anchor", "middle")
 			.attr("dy", "0.35em")
 			.attr("x", function (d, i) { return radiusScale(maxValue * cfg.labelFactor) * Math.cos(angleSlice * i - Math.PI / 2); })
-			.attr("y", function (d, i) { return radiusScale(maxValue * cfg.labelFactor) * Math.sin(angleSlice * i - Math.PI / 2); })
+			.attr("y", function (d, i) { return radiusScale(maxValue * cfg.labelFactor) * Math.sin(angleSlice * i - Math.PI / 2) - 30; })
 			.text(function (d) { return d })
 			.call(wrap, cfg.wrapWidth);
 
@@ -268,7 +270,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("class", "radarCircleWrapper");
 
 		blobCircleWrapper.selectAll(".radarInvisibleCircle")
-			.data(function (d, i) { return d; })
+			.data(function (d, i) { console.log(d); return d; })
 			.enter().append("circle")
 			.attr("class", "radarInvisibleCircle")
 			.attr("r", cfg.dotRadius * 1.5)
@@ -276,26 +278,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("cy", function (d, i) { return radiusScale(d.value) * Math.sin(angleSlice * i - Math.PI / 2); })
 			.style("fill", "none")
 			.style("pointer-events", "all")
-			.on("mouseover", function (d, i) {
-				newX = parseFloat(d3.select(this).attr('cx')) - 10;
-				newY = parseFloat(d3.select(this).attr('cy')) - 10;
-
-				tooltip
-					.attr('x', newX)
-					.attr('y', newY)
-					.text(tipFormat(i.value))
-					.transition().duration(200)
-					.style('opacity', 1);
-			})
-			.on("mouseout", function () {
-				tooltip.transition().duration(200)
-					.style("opacity", 0);
-			});
-
-		// Set up the small tooltip for when you hover over a circle
-		var tooltip = g.append("text")
-			.attr("class", "tooltip")
-			.style("opacity", 0);
+			.attr("data-bs-toggle", "tooltip") // 添加 Bootstrap 的 tooltip 屬性
+			.attr("data-bs-placement", "top") // 設定 tooltip 顯示的位置
+			.attr("data-bs-title", function(d, i) { return '['+cities[data.indexOf(d3.select(this.parentNode).datum())]+']  '+d.axis+' : '+tipFormat(d.value); }); // 設定 tooltip 的內容
 
 
 		var cityLegend = d3.selectAll('.cityLegend');
@@ -322,6 +307,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.append('label')
 			.text(d => d)
 
+		const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+		const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
 	}
 
 	function updateVisualization(cities) {
@@ -330,7 +318,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 		var g = d3.select(id).select("g")
 
-		var tooltip = g.select(".tooltip")
 		
 		if(data.length === 0){
 			g.select('.radarWrapper').remove();
@@ -443,21 +430,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.data(function(d) { return d; }) 
 			.attr("cx", function(d,i){ return radiusScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
 			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); })
-			.on("mouseover", function(d,i) {
-				newX =  parseFloat(d3.select(this).attr('cx')) - 10;
-				newY =  parseFloat(d3.select(this).attr('cy')) - 10;
-			
-				tooltip
-					.attr('x', newX)
-					.attr('y', newY)
-					.text(tipFormat(i.value))
-					.transition().duration(200)
-					.style('opacity', 1);
-				})
-				.on("mouseout", function(){
-				tooltip.transition().duration(200)
-					.style("opacity", 0);
-				});
+			.attr("data-bs-toggle", "tooltip") // 添加 Bootstrap 的 tooltip 屬性
+			.attr("data-bs-placement", "top") // 設定 tooltip 顯示的位置
+			.attr("data-bs-title", function(d, i) { return '['+cities[data.indexOf(d3.select(this.parentNode).datum())]+']  '+d.axis+' : '+tipFormat(d.value); }); // 設定 tooltip 的內容
 		
 
 		//Enter new cicleWrapper
@@ -474,21 +449,10 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("cy", function(d,i){ return radiusScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); })
 			.style("fill", "none")
 			.style("pointer-events", "all")
-			.on("mouseover", function(d,i) {
-			newX =  parseFloat(d3.select(this).attr('cx')) - 10;
-			newY =  parseFloat(d3.select(this).attr('cy')) - 10;
-		
-			tooltip
-				.attr('x', newX)
-				.attr('y', newY)
-				.text(tipFormat(i.value))
-				.transition().duration(200)
-				.style('opacity', 1);
-			})
-			.on("mouseout", function(){
-			tooltip.transition().duration(200)
-				.style("opacity", 0);
-			}); 
+			.attr("data-bs-toggle", "tooltip") // 添加 Bootstrap 的 tooltip 屬性
+			.attr("data-bs-placement", "top") // 設定 tooltip 顯示的位置
+			.attr("data-bs-title", function(d, i, j) {  return '['+cities[data.indexOf(d3.select(this.parentNode).datum())]+']  '+d.axis+' : '+tipFormat(d.value); }); // 設定 tooltip 的內容
+
 
 		
 		var legendsContainer = d3.selectAll('.l');
@@ -519,6 +483,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		newLegends
 			.append('label')
 			.text(function(d) { return d; });
+
+		const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+		const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 		
 		legends.exit().remove();
 		blobCircleWrapper.exit().remove();
