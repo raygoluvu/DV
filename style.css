@@ -17,3 +17,7 @@ div.ui-slider {
 #linechart {
     margin: 0 auto;
 }
+
+.tooltip-inner {
+    white-space: nowrap;
+  }
