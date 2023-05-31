@@ -3,9 +3,9 @@ const id = ".chart"
 
 d3.csv("tw-transportation.csv").then(function (csvData) {
 	var cfg = {
-		w: 400,					//Width of the circle
-		h: 500,					//Height of the circle
-		margin: { top: 40, right: 40, bottom: 40, left: 40 }, //The margins of the SVG
+		w: 450,					//Width of the circle
+		h: 550,					//Height of the circle
+		margin: { top: 30, right: 60, bottom: 40, left: 30 }, //The margins of the SVG
 		gap: 15,
 		levels: 3,				//How many levels or inner circles should there be drawn
 		maxValue: 0, 			//What is the value that the biggest circle will represent
@@ -196,6 +196,8 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		//Append the labels at each axis
 		axis.append("text")
 			.attr("class", "legend")
+			.attr("data-bs-toggle", "offcanvas")
+			.attr("data-bs-target", "#offcanvasBottom")
 			.style("font-size", "11px")
 			.attr("text-anchor", "middle")
 			.attr("dy", "0.35em")
@@ -555,11 +557,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			//else if (canva.style("display") == "none") {
 			//	canva.attr("display", "block")
 			//}
-			else {
-				//console.log(canva.attr("display"))
-				//canva.attr("display", "none")
-				d3.selectAll(".canva").remove()
-			}
 		});
 	}
 
@@ -646,8 +643,8 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		var canva = lineChart.append("svg")
 			.attr("display", "block")
 			.attr("class", `${target} canva`)
-			.attr("width", cfg.w + cfg.margin.left + cfg.margin.right + cfg.gap)
-			.attr("height", cfg.h * 0.65 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
+			.attr("width", cfg.w*1.4 + cfg.margin.left + cfg.margin.right + cfg.gap)
+			.attr("height", cfg.h * 0.45 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
 			.append("g")
 		//.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
 
@@ -677,11 +674,11 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		// 獲取X軸範圍
 		var xScale = d3.scaleLinear()
 			.domain([minMonth, maxMonth])
-			.range([0, cfg.w * 0.8]);
+			.range([0, cfg.w * 1.25]);
 
 		var yScale = d3.scaleLinear()
 			.domain([minTargetValue, maxTargetValue])
-			.range([cfg.h * 0.5, 0]);
+			.range([cfg.h * 0.55, 0]);
 
 		var line = d3.line()
 			.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
@@ -696,7 +693,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.style("text-anchor", "left");
 
 		var xAxis = canva.append("g")
-			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.5 + cfg.gap * 2})`)
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.522 + cfg.gap * 2})`)
 			.attr("class", "xAxis")
 			.call(d3.axisBottom(xScale))
 			.selectAll("text")
