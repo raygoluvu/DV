@@ -125,11 +125,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		.attr("class", "radar");
 			
 		var g = svg.append("g")
-			.attr("transform", "translate(212,238)");
+			.attr("transform", "translate(212,235)");
 
 		var data = citiesFilter(csvData, cities);
-
-		console.log(data);
 
 		// If the supplied maxValue is smaller than the actual one, replace by the max in the data
 		var maxValue = roundUp(Math.max(cfg.maxValue, d3.max(data, function (i) {
@@ -174,7 +172,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("x", 10)
 			.attr("y", function (d) { return -d * radius / cfg.levels; })
 			.attr("dy", "0.4em")
-			.style("font-size", "15px")
+			.style("font-size", "14px")
 			.attr("fill", "#737373")
 			.text(function(d,i) { return axisFormat(maxValue * d/cfg.levels); });
 
@@ -200,9 +198,10 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("class", "legend")
 			.attr("data-bs-toggle", "offcanvas")
 			.attr("data-bs-target", "#offcanvasBottom")
-			.style("font-size", "11px")
+			.style("font-size", "12px")
+			.style("font-weight", "bold")
 			.attr("text-anchor", "middle")
-			.attr("dy", "0.35em")
+			.attr("dy", "3em")
 			.attr("x", function (d, i) { return radiusScale(maxValue * cfg.labelFactor) * Math.cos(angleSlice * i - Math.PI / 2); })
 			.attr("y", function (d, i) { return radiusScale(maxValue * cfg.labelFactor) * Math.sin(angleSlice * i - Math.PI / 2) - 30; })
 			.text(function (d) { return d })
@@ -281,7 +280,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("class", "radarCircleWrapper");
 
 		blobCircleWrapper.selectAll(".radarInvisibleCircle")
-			.data(function (d, i) { console.log(d); return d; })
+			.data(function (d, i) { return d; })
 			.enter().append("circle")
 			.attr("class", "radarInvisibleCircle")
 			.attr("r", cfg.dotRadius * 1.5)
@@ -595,7 +594,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			months.push(i);
 		}
 
-		console.log(years, months)
 		// 篩出符合年份、城市、月份的資料
 		var filteredData = csvData.filter(function (d) {
 			return years.includes(Number(d.Year)) &&
@@ -687,7 +685,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
 			.y(function (d) { return yScale(parseInt(d[target])); }) // 假設你已經有一個 y 軸比例尺 yScale
 			.curve(d3.curveMonotoneX) // 使用曲線插值方法，可根據需求調整
-					console.log(line)
 
 		var yAxis = canva.append("g")
 			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right}, ${cfg.gap})`)
@@ -702,12 +699,20 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.call(d3.axisBottom(xScale))
 			.selectAll("text")
 			.style("text-anchor", "middle");
+		
+		canva.append("text")
+			.attr("class", "x label")
+			.attr("text-anchor", "end")
+			.attr("x", cfg.w/2 + 80)
+			.attr("y", 350)
+			.text("Month")
+			.style("font-size", "smaller")
+			.style("font-weight", "smaller")
 
 		var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
 		groupedByCity.forEach(function (values, city) {
 			let none = values[0][target] == 0 ? true : false
-			console.log(city);
 			canva.append("path")
 				.datum(values)
 				.attr("class", 'line')
@@ -727,7 +732,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 	function updateLineChart() {
 		var linechart = d3.select(".canva");
 		if (linechart.empty()) {
-			console.log("Line Chart is invisible")
 			return;
 		} else {			
 			// 在此更新折線圖
@@ -738,10 +742,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			else if (canva.classed("MRT")) { target = "MRT" }
 			else if (canva.classed("HSR")) { target = "HSR" }
 
-			console.log(target);
-
 			var groupedByCity = dataFilter(csvData, target);
-			
 
 			// 計算y軸最大值
 			var maxTargetValue = 0;
@@ -774,7 +775,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 				.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
 				.y(function (d) { return yScale(parseInt(d[target])); }) // 假設你已經有一個 y 軸比例尺 yScale
 				.curve(d3.curveMonotoneX) // 使用曲線插值方法，可根據需求調整
-			console.log(line)
+			
 			canva.select('.xAxis')
 				.transition()
 				.duration(500)
