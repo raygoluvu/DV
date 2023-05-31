@@ -298,13 +298,13 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.style("opacity", 0);
 
 
-		var cityLegend = d3.select('.cityLegend');
+		var cityLegend = d3.selectAll('.cityLegend');
 
 		cityLegend
 			.append('div')
 			.attr('class', 'l')
 
-		var legends = d3.select('.l')
+		var legends = d3.selectAll('.l')
 			.selectAll('label')
 			.data(cities)
 			.enter()
@@ -491,7 +491,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			}); 
 
 		
-		var legendsContainer = d3.select('.l');
+		var legendsContainer = d3.selectAll('.l');
 		var legends = legendsContainer
 			.selectAll('.mb-1')
 			.data(cities);
@@ -644,7 +644,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("display", "block")
 			.attr("class", `${target} canva`)
 			.attr("width", cfg.w*1.4 + cfg.margin.left + cfg.margin.right + cfg.gap)
-			.attr("height", cfg.h * 0.45 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
+			.attr("height", cfg.h * 0.43 + cfg.margin.top + cfg.margin.bottom + cfg.gap)
 			.append("g")
 		//.attr("transform", `translate(${cfg.margin.left}, ${cfg.margin.top})`)
 
@@ -678,7 +678,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 
 		var yScale = d3.scaleLinear()
 			.domain([minTargetValue, maxTargetValue])
-			.range([cfg.h * 0.55, 0]);
+			.range([cfg.h * 0.53, 0]);
 
 		var line = d3.line()
 			.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
@@ -693,7 +693,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.style("text-anchor", "left");
 
 		var xAxis = canva.append("g")
-			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.522 + cfg.gap * 2})`)
+			.attr("transform", `translate(${cfg.margin.left + cfg.margin.right + cfg.gap}, ${cfg.h * 0.5 + cfg.gap * 2})`)
 			.attr("class", "xAxis")
 			.call(d3.axisBottom(xScale))
 			.selectAll("text")
