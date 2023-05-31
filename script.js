@@ -200,11 +200,11 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			.attr("class", "legend")
 			.attr("data-bs-toggle", "offcanvas")
 			.attr("data-bs-target", "#offcanvasBottom")
-			.style("font-size", "11px")
+			.style("font-size", "15px")
 			.attr("text-anchor", "middle")
 			.attr("dy", "0.35em")
 			.attr("x", function (d, i) { return radiusScale(maxValue * cfg.labelFactor) * Math.cos(angleSlice * i - Math.PI / 2); })
-			.attr("y", function (d, i) { return radiusScale(maxValue * cfg.labelFactor) * Math.sin(angleSlice * i - Math.PI / 2) - 30; })
+			.attr("y", function (d, i) { return radiusScale(maxValue * cfg.labelFactor) * Math.sin(angleSlice * i - Math.PI / 2) -20; })
 			.text(function (d) { return d })
 			.on("mouseover", function () {
 				d3.select(this).style("fill", "#808080"); // Set the hover text color to red
@@ -317,6 +317,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		legends
 			.append('label')
 			.text(d => d)
+
+		const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+		const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 
 	}
 
@@ -648,7 +651,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		var canva = lineChart.append("svg")
 			.attr("display", "block")
 			.attr("class", `${target} canva`)
-			.attr("width", '100%')
+			.attr("width", cfg.w * 1.25)
 			.attr("height", cfg.h * 0.9)
 			.append("g")
 			.attr("transform", `translate(30, 0)`)
@@ -677,7 +680,9 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 		// 獲取X軸範圍
 		var xScale = d3.scaleLinear()
 			.domain([minMonth, maxMonth])
-			.range([0, cfg.w * 1.2]);
+			.range([0, cfg.w * 1]);
+
+		console.log('Create'+minMonth+','+maxMonth);
 
 		var yScale = d3.scaleLinear()
 			.domain([minTargetValue, maxTargetValue])
@@ -738,7 +743,6 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 			else if (canva.classed("MRT")) { target = "MRT" }
 			else if (canva.classed("HSR")) { target = "HSR" }
 
-			console.log(target);
 
 			var groupedByCity = dataFilter(csvData, target);
 			
@@ -761,10 +765,12 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 				if (tmp < minMonth) { minMonth = tmp }
 			})
 
+			console.log('Update'+minMonth+','+maxMonth);
+
 			//ERROR//
 			var xScale = d3.scaleLinear()
 			.domain([minMonth, maxMonth])
-				.range([0, cfg.w * 1.2]);
+				.range([0, cfg.w * 1]);
 
 			var yScale = d3.scaleLinear()
 				.domain([minTargetValue, maxTargetValue])
@@ -774,7 +780,8 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 				.x(function (d) { return xScale(parseInt(d.Month)); }) // 假設你已經有一個 x 軸比例尺 xScale
 				.y(function (d) { return yScale(parseInt(d[target])); }) // 假設你已經有一個 y 軸比例尺 yScale
 				.curve(d3.curveMonotoneX) // 使用曲線插值方法，可根據需求調整
-			console.log(line)
+
+
 			canva.select('.xAxis')
 				.transition()
 				.duration(500)
@@ -786,7 +793,7 @@ d3.csv("tw-transportation.csv").then(function (csvData) {
 				.call(d3.axisLeft(yScale)
 					.ticks(10));
 			
-			var paths = canva.selectAll(".line").data(groupedByCity.values());
+			var paths = canva.select("g").selectAll(".line").data(groupedByCity.values());
 
 			paths
 				.enter()
